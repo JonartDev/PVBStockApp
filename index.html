@@ -102,23 +102,17 @@
     <!-- Countdown Timer -->
     <div id="timer"></div>
     <script>
-        const apiUrl = "proxy.php";
+        const apiUrl = "https://pvbstockbackend.onrender.com/";
         const refreshInterval = 5 * 60; // 5 minutes in seconds
+        const retryDelay = 5; // retry every 10 seconds until new data appears
+        let lastReceivedAt = null; // to store last known timestamp
 
-        // 🪴 Rare or special seeds to watch for
         const specialSeeds = [
-            "Watermelon Seed",
-            "Grape Seed",
-            "Cocotank Seed",
-            "Carnivorous Plant Seed",
-            "Mr Carrot Seed",
-            "Tomatrio Seed",
-            "Shroombino Seed",
-            "Mango Seed",
-            "King Limone Seed"
+            "Watermelon Seed", "Grape Seed", "Cocotank Seed",
+            "Carnivorous Plant Seed", "Mr Carrot Seed", "Tomatrio Seed",
+            "Shroombino Seed", "Mango Seed", "King Limone Seed"
         ];
 
-        // Replace <img> tags with emojis
         function cleanContent(html) {
             return html
                 .replace(/<img[^>]+alt="eggplant"[^>]*>/g, "[🥒]")
@@ -136,20 +130,14 @@
                 .replace(/<img[^>]+alt="carrot"[^>]*>/g, "[🥕]")
                 .replace(/<img[^>]+alt="mushroom"[^>]*>/g, "[🍄]")
                 .replace(/<img[^>]+alt="tomato"[^>]*>/g, "[🍅]")
-                .replace(/<[^>]+>/g, '') // remove other HTML tags
-                .replace(/\s+/g, ' ')    // tidy up spaces
+                .replace(/<[^>]+>/g, '')
+                .replace(/\s+/g, ' ')
                 .trim();
         }
 
-        // Format stock lines with alignment
         function formatStockList(section) {
-            const lines = section
-                .split(/(?=\[)/) // split each emoji block
-                .map(line => line.trim())
-                .filter(Boolean);
-
+            const lines = section.split(/(?=\[)/).map(line => line.trim()).filter(Boolean);
             return lines.map(line => {
-                // try to align the "xN" counts
                 const match = line.match(/(.*?Seed|Gun|Grenade|Bucket)\s*x(\d+)/i);
                 if (match) {
                     const name = match[1].padEnd(20, ' ');
@@ -161,51 +149,36 @@
             }).join("<br>");
         }
 
-        // Preload alarm sound
         const alarmSound = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
         alarmSound.volume = 1.0;
 
-        // 🕒 Show current date & time
         function updateDateTime() {
             const now = new Date();
             const formatted = now.toLocaleString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
+                weekday: 'long', year: 'numeric', month: 'long',
+                day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
             });
             document.getElementById('timeDisplay').textContent = `📅 ${formatted}`;
         }
 
-        // 🔔 Trigger alarm
         function triggerAlarm(foundSeeds) {
-            alarmSound.play().catch(() => {
-                console.warn("Autoplay blocked. Click anywhere on the page to enable sound.");
-            });
-            const body = document.body;
-            body.style.backgroundColor = "#ffcccc";
-            setTimeout(() => (body.style.backgroundColor = "#f4f4f9"), 2000);
+            alarmSound.play().catch(() => console.warn("Autoplay blocked."));
+            document.body.style.backgroundColor = "#ffcccc";
+            setTimeout(() => document.body.style.backgroundColor = "#f4f4f9", 2000);
             alert(`🚨 RARE SEED ALERT!\nFound: ${foundSeeds.join(", ")}`);
         }
 
-        // 📡 Fetch stock data
-        async function fetchStockData() {
+        async function fetchStockData(isRetry = false) {
             try {
-                document.getElementById('loading').style.display = 'block';
-                document.getElementById('stockData').innerHTML = '';
-
-                const response = await fetch(apiUrl);
-                const text = await response.text();
-
-                let data;
-                try {
-                    data = JSON.parse(text);
-                } catch {
-                    throw new Error("Invalid JSON response");
+                if (!isRetry) {
+                    document.getElementById('loading').style.display = 'block';
+                    document.getElementById('stockData').innerHTML = '';
                 }
+
+                // Always bypass cache
+                const response = await fetch(`${apiUrl}?t=${Date.now()}`, { cache: "no-store" });
+                const text = await response.text();
+                const data = JSON.parse(text);
 
                 const stock = data.LiveStock[1];
                 document.getElementById('loading').style.display = 'none';
@@ -215,7 +188,16 @@
                     return;
                 }
 
-                // 🧩 Separate SEEDS and GEAR
+                // 🕐 Compare with last data timestamp
+                if (lastReceivedAt && stock.receivedAt === lastReceivedAt) {
+                    console.log(`⏳ Waiting for new data... retrying in ${retryDelay}s`);
+                    setTimeout(() => fetchStockData(true), retryDelay * 1000);
+                    return;
+                }
+
+                // ✅ New data found
+                lastReceivedAt = stock.receivedAt;
+
                 let seedMatch = stock.content.match(/SEEDS STOCK:(.*?)(?=GEAR STOCK:|$)/s);
                 let gearMatch = stock.content.match(/GEAR STOCK:(.*)/s);
 
@@ -228,14 +210,14 @@
                 const stockItem = document.createElement('div');
                 stockItem.classList.add('stock-item');
                 stockItem.innerHTML = `
-                        <div><strong>👤 Author:</strong> ${stock.author}</div><br>
-                        <div><strong>🌱 SEEDS STOCK</strong><br>${formattedSeeds}</div><br>
-                        <div><strong>⚙️ GEAR STOCK</strong><br>${formattedGear}</div>
-                        <div class="timestamp">Updated at: ${new Date(stock.receivedAt).toLocaleString()}</div>
-                `;
+            <div><strong>👤 Author:</strong> ${stock.author}</div><br>
+            <div><strong>🌱 SEEDS STOCK</strong><br>${formattedSeeds}</div><br>
+            <div><strong>⚙️ GEAR STOCK</strong><br>${formattedGear}</div>
+            <div class="timestamp">Updated at: ${new Date(stock.receivedAt).toLocaleString()}</div>
+        `;
+                document.getElementById('stockData').innerHTML = '';
                 document.getElementById('stockData').appendChild(stockItem);
 
-                // 🔍 Check for special seeds
                 const found = specialSeeds.filter(seed => seedSection.includes(seed));
                 if (found.length > 0) triggerAlarm(found);
 
@@ -247,35 +229,30 @@
             }
         }
 
-        // ⏱ Timer synced to real-time
         function startTimer() {
             const timerDisplay = document.getElementById('timer');
             setInterval(() => {
                 const now = new Date();
-                const ms = now.getTime();
-                const nextUpdate = new Date(Math.ceil(ms / (refreshInterval * 1000)) * (refreshInterval * 1000));
+                const nextUpdate = new Date(Math.ceil(now.getTime() / (refreshInterval * 1000)) * (refreshInterval * 1000));
                 const diff = nextUpdate - now;
-
                 const totalSeconds = Math.floor(diff / 1000);
                 const minutes = Math.floor(totalSeconds / 60);
                 const seconds = totalSeconds % 60;
 
                 timerDisplay.textContent = `⏱️ Next update in: ${minutes}m ${seconds < 10 ? '0' + seconds : seconds}s`;
 
-                if (totalSeconds === 0) fetchStockData();
+                if (totalSeconds <= 0) fetchStockData();
             }, 1000);
         }
 
-        // 👆 Enable sound on first click (autoplay policy)
+        // Unlock alarm sound
         document.addEventListener("click", () => {
             alarmSound.play().then(() => {
                 alarmSound.pause();
                 alarmSound.currentTime = 0;
-                console.log("✅ Sound unlocked for autoplay");
             }).catch(() => { });
         }, { once: true });
 
-        // 🕐 Start everything
         setInterval(updateDateTime, 1000);
         updateDateTime();
         fetchStockData();
