@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Live Stock Updates</title>
+    <title>🌾 Live Stock Updates</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,31 +13,41 @@
         }
 
         h1 {
-            color: #333;
+            text-align: center;
+            color: #2a9d8f;
         }
 
         .stock-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         .stock-item {
             background: #fff;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .stock-item strong {
-            color: #2a9d8f;
+        .section-title {
+            font-weight: bold;
+            color: #264653;
+            margin-bottom: 10px;
+        }
+
+        .stock-list {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px 12px;
+            padding-left: 10px;
         }
 
         .timestamp {
             font-size: 12px;
-            color: #888;
+            color: #777;
             text-align: right;
+            margin-top: 10px;
         }
 
         .loading {
@@ -49,44 +59,14 @@
         #timeDisplay,
         #timer {
             text-align: center;
+            margin-top: 10px;
             font-size: 16px;
             color: #555;
-            margin-top: 10px;
         }
 
         #timeDisplay {
             font-weight: bold;
             color: #2a9d8f;
-        }
-
-        /* Custom layout for stocks */
-        .stock-section {
-            margin-top: 10px;
-        }
-
-        .section-title {
-            font-weight: bold;
-            color: #264653;
-            margin-bottom: 5px;
-        }
-
-        .stock-list {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 5px 10px;
-            align-items: center;
-            padding-left: 10px;
-        }
-
-        .stock-item-entry {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .stock-item-entry img {
-            width: 20px;
-            height: 20px;
         }
     </style>
 </head>
@@ -95,17 +75,13 @@
     <h1>🌾 Live Stock Updates</h1>
     <div id="loading" class="loading">Loading data...</div>
     <div id="stockData" class="stock-container"></div>
-
-    <!-- Current Date/Time -->
     <div id="timeDisplay"></div>
-
-    <!-- Countdown Timer -->
     <div id="timer"></div>
+
     <script>
-        const apiUrl = "https://pvbstockbackend.onrender.com/";
-        const refreshInterval = 5 * 60; // 5 minutes in seconds
-        const retryDelay = 5; // retry every 10 seconds until new data appears
-        let lastReceivedAt = null; // to store last known timestamp
+        const refreshInterval = 5 * 60; // 5 minutes
+        const retryDelay = 5; // 5 seconds
+        let lastCreatedAt = null;
 
         const specialSeeds = [
             "Watermelon Seed", "Grape Seed", "Cocotank Seed",
@@ -113,52 +89,26 @@
             "Shroombino Seed", "Mango Seed", "King Limone Seed"
         ];
 
-        function cleanContent(html) {
-            return html
-                .replace(/<img[^>]+alt="eggplant"[^>]*>/g, "[🥒]")
-                .replace(/<img[^>]+alt="dragon_fruit"[^>]*>/g, "[🐉]")
-                .replace(/<img[^>]+alt="sunflower"[^>]*>/g, "[🌻]")
-                .replace(/<img[^>]+alt="pumpkin"[^>]*>/g, "[🎃]")
-                .replace(/<img[^>]+alt="strawberry"[^>]*>/g, "[🍓]")
-                .replace(/<img[^>]+alt="cactus"[^>]*>/g, "[🌵]")
-                .replace(/<img[^>]+alt="banana"[^>]*>/g, "[🍌]")
-                .replace(/<img[^>]+alt="grenade"[^>]*>/g, "[💣]")
-                .replace(/<img[^>]+alt="water"[^>]*>/g, "[💧]")
-                .replace(/<img[^>]+alt="grape"[^>]*>/g, "[🍇]")
-                .replace(/<img[^>]+alt="mango"[^>]*>/g, "[🥭]")
-                .replace(/<img[^>]+alt="king"[^>]*>/g, "[👑]")
-                .replace(/<img[^>]+alt="carrot"[^>]*>/g, "[🥕]")
-                .replace(/<img[^>]+alt="mushroom"[^>]*>/g, "[🍄]")
-                .replace(/<img[^>]+alt="tomato"[^>]*>/g, "[🍅]")
-                .replace(/<[^>]+>/g, '')
-                .replace(/\s+/g, ' ')
-                .trim();
-        }
-
-        function formatStockList(section) {
-            const lines = section.split(/(?=\[)/).map(line => line.trim()).filter(Boolean);
-            return lines.map(line => {
-                const match = line.match(/(.*?Seed|Gun|Grenade|Bucket)\s*x(\d+)/i);
-                if (match) {
-                    const name = match[1].padEnd(20, ' ');
-                    const qty = match[2];
-                    const emoji = line.match(/^\[[^\]]+\]/)?.[0] || '';
-                    return `${emoji} ${name} x${qty}`;
-                }
-                return line;
-            }).join("<br>");
-        }
+        const itemEmojis = {
+            banana_gun: "🍌",
+            frost_grenade: "💣❄️",
+            water_bucket: "💧🪣",
+            dragon_fruit: "🐉",
+            sunflower: "🌻",
+            pumpkin: "🎃",
+            strawberry: "🍓",
+            cactus: "🌵"
+        };
 
         const alarmSound = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
-        alarmSound.volume = 1.0;
 
         function updateDateTime() {
             const now = new Date();
-            const formatted = now.toLocaleString('en-US', {
-                weekday: 'long', year: 'numeric', month: 'long',
-                day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
-            });
-            document.getElementById('timeDisplay').textContent = `📅 ${formatted}`;
+            document.getElementById('timeDisplay').textContent =
+                "📅 " + now.toLocaleString('en-US', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                });
         }
 
         function triggerAlarm(foundSeeds) {
@@ -168,64 +118,67 @@
             alert(`🚨 RARE SEED ALERT!\nFound: ${foundSeeds.join(", ")}`);
         }
 
+        function formatItems(items, type) {
+            return items.map(item => {
+                const emoji = itemEmojis[item.item_id] || (type === 'seeds' ? "🌱" : "⚙️");
+                return `
+                    <div class="stock-list">
+                        <span>${emoji} ${item.display_name}</span>
+                        <span>x${item.multiplier}</span>
+                    </div>`;
+            }).join('');
+        }
+
         async function fetchStockData(isRetry = false) {
             try {
-                if (!isRetry) {
-                    document.getElementById('loading').style.display = 'block';
-                    document.getElementById('stockData').innerHTML = '';
-                }
+                if (!isRetry) document.getElementById('loading').style.display = 'block';
 
-                // Always bypass cache
-                const response = await fetch(`${apiUrl}?t=${Date.now()}`, { cache: "no-store" });
-                const text = await response.text();
-                const data = JSON.parse(text);
+                // ✅ Use your live Render URLs
+                const [seedsRes, gearRes] = await Promise.all([
+                    fetch("https://pvbstockbackend.onrender.com/seed_proxy.php?t=" + Date.now()),
+                    fetch("https://pvbstockbackend.onrender.com/gear_proxy.php?t=" + Date.now())
+                ]);
 
-                const stock = data.LiveStock[1];
-                document.getElementById('loading').style.display = 'none';
+                const seeds = await seedsRes.json();
+                const gear = await gearRes.json();
 
-                if (!stock) {
+                if (!Array.isArray(seeds) || !Array.isArray(gear) || !seeds.length || !gear.length) {
                     document.getElementById('stockData').innerHTML = "<p>No stock data available.</p>";
+                    document.getElementById('loading').style.display = 'none';
                     return;
                 }
 
-                // 🕐 Compare with last data timestamp
-                if (lastReceivedAt && stock.receivedAt === lastReceivedAt) {
+                const latestTime = seeds[0].created_at;
+                if (lastCreatedAt && lastCreatedAt === latestTime) {
                     console.log(`⏳ Waiting for new data... retrying in ${retryDelay}s`);
                     setTimeout(() => fetchStockData(true), retryDelay * 1000);
                     return;
                 }
 
-                // ✅ New data found
-                lastReceivedAt = stock.receivedAt;
+                lastCreatedAt = latestTime;
 
-                let seedMatch = stock.content.match(/SEEDS STOCK:(.*?)(?=GEAR STOCK:|$)/s);
-                let gearMatch = stock.content.match(/GEAR STOCK:(.*)/s);
+                document.getElementById('stockData').innerHTML = `
+                    <div class="stock-item">
+                        <div class="section-title">🌱 SEEDS STOCK</div>
+                        ${formatItems(seeds, 'seeds')}
+                        <br>
+                        <div class="section-title">⚙️ GEAR STOCK</div>
+                        ${formatItems(gear, 'gear')}
+                        <div class="timestamp">Updated at: ${new Date(latestTime).toLocaleString()}</div>
+                    </div>
+                `;
 
-                let seedSection = seedMatch ? cleanContent(seedMatch[1]) : "No seed data found";
-                let gearSection = gearMatch ? cleanContent(gearMatch[1]) : "No gear data found";
+                document.getElementById('loading').style.display = 'none';
 
-                const formattedSeeds = formatStockList(seedSection);
-                const formattedGear = formatStockList(gearSection);
-
-                const stockItem = document.createElement('div');
-                stockItem.classList.add('stock-item');
-                stockItem.innerHTML = `
-            <div><strong>👤 Author:</strong> ${stock.author}</div><br>
-            <div><strong>🌱 SEEDS STOCK</strong><br>${formattedSeeds}</div><br>
-            <div><strong>⚙️ GEAR STOCK</strong><br>${formattedGear}</div>
-            <div class="timestamp">Updated at: ${new Date(stock.receivedAt).toLocaleString()}</div>
-        `;
-                document.getElementById('stockData').innerHTML = '';
-                document.getElementById('stockData').appendChild(stockItem);
-
-                const found = specialSeeds.filter(seed => seedSection.includes(seed));
+                const found = specialSeeds.filter(seed =>
+                    seeds.some(s => s.display_name.toLowerCase().includes(seed.toLowerCase()))
+                );
                 if (found.length > 0) triggerAlarm(found);
 
-            } catch (error) {
-                console.error('Error fetching stock data:', error);
+            } catch (err) {
+                console.error("❌ Error fetching:", err);
                 document.getElementById('loading').style.display = 'none';
-                document.getElementById('stockData').innerHTML =
-                    "<p>Error loading data. Please try again later.</p>";
+                document.getElementById('stockData').innerHTML = "<p>Error loading data.</p>";
             }
         }
 
@@ -238,14 +191,11 @@
                 const totalSeconds = Math.floor(diff / 1000);
                 const minutes = Math.floor(totalSeconds / 60);
                 const seconds = totalSeconds % 60;
-
                 timerDisplay.textContent = `⏱️ Next update in: ${minutes}m ${seconds < 10 ? '0' + seconds : seconds}s`;
-
                 if (totalSeconds <= 0) fetchStockData();
             }, 1000);
         }
 
-        // Unlock alarm sound
         document.addEventListener("click", () => {
             alarmSound.play().then(() => {
                 alarmSound.pause();
@@ -258,148 +208,6 @@
         fetchStockData();
         startTimer();
     </script>
-
-    <!-- <script>
-        const apiUrl = "proxy.php"; // PHP proxy file
-        const refreshInterval = 5 * 60; // 5 minutes
-        let alarmPlayed = false;
-
-        // 🎯 List of rare seeds to watch for
-        const rareSeeds = [
-            "Watermelon Seed",
-            "Grape Seed",
-            "Cocotank Seed",
-            "Carnivorous Plant Seed",
-            "Mr Carrot Seed",
-            "Tomatrio Seed",
-            "Shroombino Seed",
-            "Mango Seed",
-            "King Limone Seed"
-        ];
-
-        // 🕒 Function to update current date & time
-        function updateDateTime() {
-            const now = new Date();
-            const formatted = now.toLocaleString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-            document.getElementById('timeDisplay').textContent = `📅 ${formatted}`;
-        }
-
-        // 🔔 Alarm trigger
-        function triggerAlarm(seedName) {
-            if (alarmPlayed) return; // avoid repeats until next update
-            alarmPlayed = true;
-
-            alert(`🚨 Rare seed detected: ${seedName}!`);
-
-            // 🔊 Optional beep sound
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            oscillator.type = 'sine';
-            oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 1); // 1s beep
-        }
-
-        // 📡 Fetch stock data
-        async function fetchStockData() {
-            try {
-                document.getElementById('loading').style.display = 'block';
-                document.getElementById('stockData').innerHTML = '';
-
-                const response = await fetch(apiUrl);
-                const text = await response.text();
-
-                let data;
-                try {
-                    data = JSON.parse(text);
-                } catch (err) {
-                    throw new Error("Invalid JSON response");
-                }
-
-                const item = data.LiveStock[1];
-                document.getElementById('loading').style.display = 'none';
-
-                if (!item || !item.content) {
-                    document.getElementById('stockData').innerHTML = "<p>No stock data available.</p>";
-                    return;
-                }
-
-                // Parse content sections
-                const content = item.content.replace(/\n/g, ' ');
-                const [seedPart, gearPart] = content.split("GEAR STOCK:");
-                const seeds = seedPart.replace("SEEDS STOCK:", "").trim();
-                const gears = gearPart ? gearPart.trim() : "";
-
-                // Check for rare seeds
-                rareSeeds.forEach(seed => {
-                    if (seeds.toLowerCase().includes(seed.toLowerCase())) {
-                        triggerAlarm(seed);
-                    }
-                });
-
-                // Display neatly
-                const stockItem = document.createElement('div');
-                stockItem.classList.add('stock-item');
-                stockItem.innerHTML = `
-      <div><strong>Author:</strong> ${item.author}</div>
-      <h3>🌱 SEEDS STOCK</h3>
-      <div>${seeds}</div>
-      <h3>⚙️ GEAR STOCK</h3>
-      <div>${gears}</div>
-      <div class="timestamp">Updated at: ${new Date(item.receivedAt).toLocaleString()}</div>
-    `;
-                document.getElementById('stockData').appendChild(stockItem);
-
-                // reset alarm for next cycle
-                alarmPlayed = false;
-
-            } catch (error) {
-                console.error('Error fetching stock data:', error);
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('stockData').innerHTML = "<p>Error loading data. Please try again later.</p>";
-            }
-        }
-
-        // ⏱ Real-time synced timer
-        function startTimer() {
-            const timerDisplay = document.getElementById('timer');
-
-            setInterval(() => {
-                const now = new Date();
-                const ms = now.getTime();
-                const nextUpdate = new Date(Math.ceil(ms / (refreshInterval * 1000)) * (refreshInterval * 1000));
-                const diff = nextUpdate - now;
-                const totalSeconds = Math.floor(diff / 1000);
-                const minutes = Math.floor(totalSeconds / 60);
-                const seconds = totalSeconds % 60;
-
-                timerDisplay.textContent = `⏱️ Next update in: ${minutes}m ${seconds < 10 ? '0' + seconds : seconds}s`;
-
-                if (totalSeconds === 0) {
-                    fetchStockData();
-                }
-            }, 1000);
-        }
-
-        // 🕐 Start live updates
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-        fetchStockData();
-        startTimer();
-    </script> -->
-
 </body>
 
 </html>
