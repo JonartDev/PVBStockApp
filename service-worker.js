@@ -31,4 +31,17 @@ self.addEventListener("activate", (event) => {
         )
     );
     self.clients.claim();
+});// 🔔 Listen for custom notification events
+self.addEventListener('message', event => {
+    if (event.data && event.data.type === 'SHOW_NOTIFICATION') {
+        const data = event.data.payload;
+        self.registration.showNotification("🚨 Rare Item Found!", {
+            body: data.message,
+            icon: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
+            vibrate: [300, 200, 300],
+            badge: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
+            requireInteraction: true
+        });
+    }
 });
+

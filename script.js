@@ -1,13 +1,12 @@
 /* =========================================================
-   🌱 PVB STOCK ALERT SYSTEM - FIXED RETRY + POPUP NOTIFICATION
+   🌱 PVB STOCK ALERT SYSTEM - with Loading Overlay
    ========================================================= */
 
-const REFRESH_INTERVAL = 5 * 60; // 5 minutes
-const RETRY_DELAY = 5; // 5 seconds retry interval
+const REFRESH_INTERVAL = 5 * 60;
+const RETRY_DELAY = 5;
 let lastCreatedAt = null;
 let alarmInterval = null;
 let audioCtx;
-let retryStartTime = null;
 
 const ALL_SEEDS = ["Cactus", "Strawberry", "Pumpkin", "Sunflower", "Dragon Fruit", "Eggplant",
     "Watermelon", "Grape Seed", "Cocotank", "Carnivorous Plant", "Mr Carrot", "Tomatrio",
@@ -29,35 +28,37 @@ const ICONS = {
 const alarmSound = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
 alarmSound.loop = true;
 
-// Request notification permission
 if ("Notification" in window && Notification.permission !== "granted") {
     Notification.requestPermission();
 }
-
 function showNotification(foundItems) {
-    // Show phone-style notification
+    const message = foundItems.join(", ");
+
+    // ✅ System notification for minimized / background apps
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            type: 'SHOW_NOTIFICATION',
+            payload: { message }
+        });
+    }
+
+    // ✅ In-page popup (Messenger style)
+    showPopup("🚨 " + message + " found!");
+
+    // ✅ System notification (browser-level)
     if ("Notification" in window && Notification.permission === "granted") {
         new Notification("🚨 Rare Item Found!", {
-            body: foundItems.join(", "),
+            body: message,
             icon: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
             vibrate: [300, 200, 300],
             requireInteraction: true
         });
     }
-    // Service worker fallback for minimized state
-    if (navigator.serviceWorker?.ready) {
-        navigator.serviceWorker.ready.then(sw => {
-            sw.showNotification("🚨 Rare Item Found!", {
-                body: foundItems.join(", "),
-                icon: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
-                badge: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
-                vibrate: [300, 200, 300],
-                requireInteraction: true
-            });
-        });
-    }
+
+    // ✅ Vibration feedback
     if (navigator.vibrate) navigator.vibrate([300, 200, 300]);
 }
+
 
 let audioUnlocked = false;
 function unlockAudio() {
@@ -81,7 +82,6 @@ function triggerAlarm(foundItems) {
     document.getElementById("stopSoundBtn").style.display = "block";
     alarmSound.currentTime = 0;
     alarmSound.play().catch(() => console.warn("🔇 Autoplay blocked"));
-
     if (alarmInterval) clearInterval(alarmInterval);
     alarmInterval = setInterval(() => {
         showNotification(foundItems);
@@ -124,16 +124,14 @@ function updateDateTime() {
 /* 🌐 FETCH STOCK DATA */
 async function fetchStockData(isRetry = false, isManual = false) {
     const refreshBtn = document.getElementById("refreshBtn");
+    refreshBtn.classList.add("spinning");
     const loadingOverlay = document.getElementById("loadingOverlay");
     const stockData = document.getElementById("stockData");
-
-    refreshBtn.classList.add("spinning");
 
     try {
         if (!isRetry || isManual) {
             loadingOverlay.style.display = "flex";
             stockData.style.opacity = "0.4";
-            retryStartTime = Date.now();
         }
 
         const timestamp = Date.now();
@@ -141,29 +139,21 @@ async function fetchStockData(isRetry = false, isManual = false) {
             fetch(`https://pvbstockbackend.onrender.com/seed_proxy.php?t=${timestamp}`),
             fetch(`https://pvbstockbackend.onrender.com/gear_proxy.php?t=${timestamp}`)
         ]);
-
         const [seeds, gear] = await Promise.all([seedsRes.json(), gearRes.json()]);
 
-        if (!Array.isArray(seeds) || !Array.isArray(gear)) throw new Error("Invalid data");
+        if (!Array.isArray(seeds) || !Array.isArray(gear)) {
+            stockData.innerHTML = "<p>No stock data available.</p>";
+            return;
+        }
 
         const latestTime = seeds[0]?.created_at;
-
-        // Keep retrying until new API data appears (within 5 minutes)
         if (lastCreatedAt && lastCreatedAt === latestTime) {
-            const elapsed = (Date.now() - retryStartTime) / 1000;
-            if (elapsed < REFRESH_INTERVAL) {
-                console.log(`⏳ No new data yet... retrying in ${RETRY_DELAY}s`);
-                setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
-                return;
-            } else {
-                console.warn("⚠️ Max wait time reached, showing old data.");
-            }
+            console.log("⏳ No new data, retrying...");
+            setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
+            return;
         }
 
         lastCreatedAt = latestTime;
-        loadingOverlay.style.display = "none";
-        stockData.style.opacity = "1";
-
         stockData.innerHTML = `
       <div class="stock-item">
         <div class="section-header"><div class="section-title">🌱 SEEDS STOCK</div></div>
@@ -190,7 +180,19 @@ async function fetchStockData(isRetry = false, isManual = false) {
         setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
     } finally {
         refreshBtn.classList.remove("spinning");
+        loading.style.display = "none";
+
+        // ✅ Only hide the loader when new data actually arrives
+        if (lastCreatedAt) {
+            setTimeout(() => {
+                loadingOverlay.style.display = "none";
+                stockData.style.opacity = "1";
+            }, 600);
+        } else {
+            console.log("⏳ Waiting for new data... keeping loader visible");
+        }
     }
+
 }
 
 function renderItems(items, type) {
@@ -215,13 +217,17 @@ function startTimer() {
 }
 
 /* ⚙️ SETTINGS */
+const modal = document.getElementById("settingsModal");
+const seedSettings = document.getElementById("seedSettings");
+const gearSettings = document.getElementById("gearSettings");
+
 function openSettings() {
     seedSettings.innerHTML = ALL_SEEDS.map(seed =>
         `<div class="seed-option"><input type="checkbox" id="${seed}" ${selectedSeeds.includes(seed) ? "checked" : ""}>
-      <label for="${seed}">${ICONS[seed] || "🌱"} ${seed}</label></div>`).join("");
+    <label for="${seed}">${ICONS[seed] || "🌱"} ${seed}</label></div>`).join("");
     gearSettings.innerHTML = ALL_GEARS.map(gear =>
         `<div class="seed-option"><input type="checkbox" id="${gear}" ${selectedGears.includes(gear) ? "checked" : ""}>
-      <label for="${gear}">${ICONS[gear] || "⚙️"} ${gear}</label></div>`).join("");
+    <label for="${gear}">${ICONS[gear] || "⚙️"} ${gear}</label></div>`).join("");
     modal.style.display = "flex";
 }
 function closeSettings() { modal.style.display = "none"; }
