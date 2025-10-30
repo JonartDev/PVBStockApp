@@ -31,33 +31,27 @@ alarmSound.loop = true;
 if ("Notification" in window && Notification.permission !== "granted") {
     Notification.requestPermission();
 }
+// 🔔 Show Messenger-like popup + system notification
 function showNotification(foundItems) {
     const message = foundItems.join(", ");
 
-    // ✅ System notification for minimized / background apps
-    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+    // 💬 Show in-app popup
+    showPopup("🚨 " + message + " found!");
+
+    // 💥 Send system notification through service worker
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
         navigator.serviceWorker.controller.postMessage({
-            type: 'SHOW_NOTIFICATION',
+            type: "SHOW_NOTIFICATION",
             payload: { message }
         });
     }
 
-    // ✅ In-page popup (Messenger style)
-    showPopup("🚨 " + message + " found!");
-
-    // ✅ System notification (browser-level)
-    if ("Notification" in window && Notification.permission === "granted") {
-        new Notification("🚨 Rare Item Found!", {
-            body: message,
-            icon: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
-            vibrate: [300, 200, 300],
-            requireInteraction: true
-        });
+    // 💫 Optional vibration (mobile)
+    if (navigator.vibrate) {
+        navigator.vibrate([300, 200, 300]);
     }
-
-    // ✅ Vibration feedback
-    if (navigator.vibrate) navigator.vibrate([300, 200, 300]);
 }
+
 
 
 let audioUnlocked = false;
