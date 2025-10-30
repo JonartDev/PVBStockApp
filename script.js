@@ -118,10 +118,10 @@ async function fetchStockData(isRetry = false) {
 
         const latestTime = seeds[0]?.created_at;
         if (lastCreatedAt && lastCreatedAt === latestTime) {
-            loading.textContent = "🔄 Waiting for new updates...";
-            setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
-            return;
+            loading.textContent = "🔄 No new updates yet.";
+            return; // stop here, wait for the next 5-minute timer
         }
+
 
         lastCreatedAt = latestTime;
         stockData.innerHTML = `
