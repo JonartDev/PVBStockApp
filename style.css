@@ -1,0 +1,172 @@
+ body {
+     font-family: Arial, sans-serif;
+     background-color: #f4f4f9;
+     padding: 20px;
+ }
+
+ h1 {
+     text-align: center;
+     color: #2a9d8f;
+ }
+
+ .stock-container {
+     max-width: 800px;
+     margin: 0 auto;
+ }
+
+ .stock-item {
+     background: #fff;
+     border-radius: 12px;
+     padding: 20px;
+     margin-bottom: 20px;
+     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+ }
+
+ .section-title {
+     font-weight: bold;
+     color: #264653;
+     margin-bottom: 10px;
+ }
+
+ .stock-list {
+     display: grid;
+     grid-template-columns: 1fr auto;
+     gap: 8px 12px;
+     padding-left: 10px;
+ }
+
+ .timestamp {
+     font-size: 12px;
+     color: #777;
+     text-align: right;
+     margin-top: 10px;
+ }
+
+ .loading {
+     text-align: center;
+     font-size: 18px;
+     color: #ff6f61;
+ }
+
+ #timeDisplay,
+ #timer {
+     text-align: center;
+     margin-top: 10px;
+     font-size: 16px;
+     color: #555;
+ }
+
+ #timeDisplay {
+     font-weight: bold;
+     color: #2a9d8f;
+ }
+
+ #settingsBtn {
+     position: fixed;
+     bottom: 20px;
+     right: 20px;
+     background: #2a9d8f;
+     color: white;
+     border: none;
+     border-radius: 50%;
+     width: 56px;
+     height: 56px;
+     font-size: 26px;
+     cursor: pointer;
+     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+ }
+
+ #stopSoundBtn {
+     position: fixed;
+     bottom: 90px;
+     right: 20px;
+     background: #e63946;
+     color: white;
+     border: none;
+     border-radius: 12px;
+     padding: 12px 18px;
+     font-size: 16px;
+     cursor: pointer;
+     display: none;
+     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+ }
+
+ #settingsModal {
+     display: none;
+     position: fixed;
+     z-index: 1000;
+     left: 0;
+     top: 0;
+     width: 100%;
+     height: 100%;
+     background: rgba(0, 0, 0, 0.4);
+ }
+
+ #settingsContent {
+     background: #fff;
+     margin: 60px auto;
+     padding: 20px;
+     border-radius: 12px;
+     width: 90%;
+     max-width: 400px;
+     overflow-y: auto;
+     max-height: 80vh;
+ }
+
+ #settingsContent h2 {
+     text-align: center;
+     color: #264653;
+     margin-bottom: 12px;
+ }
+
+ .seed-option {
+     display: flex;
+     align-items: center;
+     margin: 8px 0;
+ }
+
+ .seed-option input {
+     margin-right: 10px;
+ }
+
+ .btn-save {
+     background: #2a9d8f;
+     color: white;
+     border: none;
+     width: 100%;
+     padding: 10px;
+     border-radius: 8px;
+     margin-top: 10px;
+     cursor: pointer;
+ }
+
+ .btn-close {
+     background: #ccc;
+     border: none;
+     width: 100%;
+     padding: 8px;
+     border-radius: 8px;
+     margin-top: 6px;
+     cursor: pointer;
+ }
+
+ .tab {
+     display: flex;
+     justify-content: center;
+     margin-bottom: 10px;
+ }
+
+ .tab button {
+     flex: 1;
+     padding: 10px;
+     border: none;
+     cursor: pointer;
+     font-weight: bold;
+     background: #ccc;
+     color: #333;
+ }
+
+ .tab button.active {
+     background: #2a9d8f;
+     color: white;
+ }

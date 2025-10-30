@@ -5,70 +5,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>🌾 Live Stock Updates</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            padding: 20px;
-        }
-
-        h1 {
-            text-align: center;
-            color: #2a9d8f;
-        }
-
-        .stock-container {
-            max-width: 800px;
-            margin: 0 auto;
-        }
-
-        .stock-item {
-            background: #fff;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        .section-title {
-            font-weight: bold;
-            color: #264653;
-            margin-bottom: 10px;
-        }
-
-        .stock-list {
-            display: grid;
-            grid-template-columns: 1fr auto;
-            gap: 8px 12px;
-            padding-left: 10px;
-        }
-
-        .timestamp {
-            font-size: 12px;
-            color: #777;
-            text-align: right;
-            margin-top: 10px;
-        }
-
-        .loading {
-            text-align: center;
-            font-size: 18px;
-            color: #ff6f61;
-        }
-
-        #timeDisplay,
-        #timer {
-            text-align: center;
-            margin-top: 10px;
-            font-size: 16px;
-            color: #555;
-        }
-
-        #timeDisplay {
-            font-weight: bold;
-            color: #2a9d8f;
-        }
-    </style>
+    <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
@@ -78,150 +15,25 @@
     <div id="timeDisplay"></div>
     <div id="timer"></div>
 
-    <script>
-        const refreshInterval = 5 * 60;
-        const retryDelay = 5;
-        let lastCreatedAt = null;
+    <button id="stopSoundBtn">🛑 Stop Sound</button>
+    <button id="settingsBtn">⚙️</button>
 
-        const specialSeeds = [
-            "Watermelon", "Grape Seed", "Cocotank",
-            "Carnivorous Plant", "Mr Carrot", "Tomatrio",
-            "Shroombino", "Mango", "King Limoneeed", "Dragon Fruit"
-        ];
+    <div id="settingsModal">
+        <div id="settingsContent">
+            <h2>🔔 Notification Settings</h2>
+            <div class="tab">
+                <button id="tabSeeds" class="active" onclick="switchTab('seeds')">🌱 Seeds</button>
+                <button id="tabGears" onclick="switchTab('gears')">⚙️ Gears</button>
+            </div>
+            <div id="seedSettings"></div>
+            <div id="gearSettings" style="display: none;"></div>
+            <button class="btn-save" onclick="saveSettings()">💾 Save</button>
+            <button class="btn-close" onclick="closeSettings()">❌ Close</button>
+        </div>
+    </div>
 
-        const itemEmojis = {
-            banana_gun: "🍌",
-            frost_grenade: "💣❄️",
-            water_bucket: "💧🪣",
-            dragon_fruit: "🐉",
-            sunflower: "🌻",
-            pumpkin: "🎃",
-            strawberry: "🍓",
-            cactus: "🌵"
-        };
-
-        const alarmSound = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
-
-        // ✅ Request notification + vibration permissions
-        if ("Notification" in window && Notification.permission !== "granted") {
-            Notification.requestPermission();
-        }
-
-        function showNotification(foundSeeds) {
-            if ("Notification" in window && Notification.permission === "granted") {
-                const notif = new Notification("🚨 Rare Seed Found!", {
-                    body: foundSeeds.join(", "),
-                    icon: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
-                    vibrate: [300, 200, 300, 200, 300],
-                    requireInteraction: true // stays until user taps
-                });
-            }
-            if (navigator.vibrate) {
-                navigator.vibrate([300, 200, 300, 200, 300]);
-            }
-        }
-
-        function updateDateTime() {
-            const now = new Date();
-            document.getElementById('timeDisplay').textContent =
-                "📅 " + now.toLocaleString('en-US', {
-                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
-                });
-        }
-
-        function triggerAlarm(foundSeeds) {
-            alarmSound.play().catch(() => console.warn("Autoplay blocked."));
-            document.body.style.backgroundColor = "#ffcccc";
-            setTimeout(() => document.body.style.backgroundColor = "#f4f4f9", 2000);
-            alert(`🚨 RARE SEED ALERT!\nFound: ${foundSeeds.join(", ")}`);
-            showNotification(foundSeeds);
-        }
-
-        function formatItems(items, type) {
-            return items.map(item => {
-                const emoji = itemEmojis[item.item_id] || (type === 'seeds' ? "🌱" : "⚙️");
-                return `<div class="stock-list"><span>${emoji} ${item.display_name}</span><span>x${item.multiplier}</span></div>`;
-            }).join('');
-        }
-
-        async function fetchStockData(isRetry = false) {
-            try {
-                if (!isRetry) document.getElementById('loading').style.display = 'block';
-
-                const [seedsRes, gearRes] = await Promise.all([
-                    fetch("https://pvbstockbackend.onrender.com/seed_proxy.php?t=" + Date.now()),
-                    fetch("https://pvbstockbackend.onrender.com/gear_proxy.php?t=" + Date.now())
-                ]);
-
-                const seeds = await seedsRes.json();
-                const gear = await gearRes.json();
-
-                if (!Array.isArray(seeds) || !Array.isArray(gear) || !seeds.length || !gear.length) {
-                    document.getElementById('stockData').innerHTML = "<p>No stock data available.</p>";
-                    document.getElementById('loading').style.display = 'none';
-                    return;
-                }
-
-                const latestTime = seeds[0].created_at;
-                if (lastCreatedAt && lastCreatedAt === latestTime) {
-                    console.log(`⏳ Waiting for new data... retrying in ${retryDelay}s`);
-                    setTimeout(() => fetchStockData(true), retryDelay * 1000);
-                    return;
-                }
-
-                lastCreatedAt = latestTime;
-                document.getElementById('stockData').innerHTML = `
-          <div class="stock-item">
-            <div class="section-title">🌱 SEEDS STOCK</div>
-            ${formatItems(seeds, 'seeds')}
-            <br>
-            <div class="section-title">⚙️ GEAR STOCK</div>
-            ${formatItems(gear, 'gear')}
-            <div class="timestamp">Updated at: ${new Date(latestTime).toLocaleString()}</div>
-          </div>
-        `;
-                document.getElementById('loading').style.display = 'none';
-
-                const found = specialSeeds.filter(seed =>
-                    seeds.some(s => s.display_name.toLowerCase().includes(seed.toLowerCase()))
-                );
-                if (found.length > 0) triggerAlarm(found);
-
-            } catch (err) {
-                console.error("❌ Error fetching:", err);
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('stockData').innerHTML = "<p>Error loading data.</p>";
-            }
-        }
-
-        function startTimer() {
-            const timerDisplay = document.getElementById('timer');
-            setInterval(() => {
-                const now = new Date();
-                const nextUpdate = new Date(Math.ceil(now.getTime() / (refreshInterval * 1000)) * (refreshInterval * 1000));
-                const diff = nextUpdate - now;
-                const totalSeconds = Math.floor(diff / 1000);
-                const minutes = Math.floor(totalSeconds / 60);
-                const seconds = totalSeconds % 60;
-                timerDisplay.textContent = `⏱️ Next update in: ${minutes}m ${seconds < 10 ? '0' + seconds : seconds}s`;
-                if (totalSeconds <= 0) fetchStockData();
-            }, 1000);
-        }
-
-        // unlock sound on mobile tap
-        document.addEventListener("click", () => {
-            alarmSound.play().then(() => {
-                alarmSound.pause();
-                alarmSound.currentTime = 0;
-            }).catch(() => { });
-        }, { once: true });
-
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-        fetchStockData();
-        startTimer();
-    </script>
+    <script src="./script.js"></script>
+   
 </body>
 
 </html>
