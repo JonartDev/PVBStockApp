@@ -1,17 +1,17 @@
 <?php
 // === Allowed website origin ===
 // ✅ change this to your real site domain:
-$allowed_origin = "https://plants-vs-brainbot-stock-notifier-ryt4lvtlp0.edgeone.app";
+// $allowed_origin = "https://plants-vs-brainbot-stock-notifier-ryt4lvtlp0.edgeone.app";
 
-// === Check the Origin header ===
-$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
-if ($origin === $allowed_origin) {
-    header("Access-Control-Allow-Origin: $allowed_origin");
-} else {
-    http_response_code(403);
-    echo json_encode(["error" => "Forbidden: Invalid origin"]);
-    exit();
-}
+// // === Check the Origin header ===
+// $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+// if ($origin === $allowed_origin) {
+//     header("Access-Control-Allow-Origin: $allowed_origin");
+// } else {
+//     http_response_code(403);
+//     echo json_encode(["error" => "Forbidden: Invalid origin"]);
+//     exit();
+// }
 
 // === CORS headers ===
 header("Access-Control-Allow-Origin: *");
