@@ -20,7 +20,6 @@
             }
         }
 
-        /* 🔄 Refresh button styling */
         .refresh-top-btn {
             font-size: 20px;
             border: none;
@@ -35,7 +34,6 @@
             filter: drop-shadow(0 0 6px #2ecc71);
         }
 
-        /* 🔁 Overlay loader */
         #loadingOverlay {
             display: none;
             position: fixed;
@@ -71,16 +69,16 @@
     <script>
         /* 🧩 PWA Setup */
         if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register('./service-worker.js')
-                .then(() => console.log('✅ Service Worker registered'))
-                .catch(err => console.error('❌ SW registration failed:', err));
+            navigator.serviceWorker.register("./service-worker.js")
+                .then(() => console.log("✅ Service Worker registered"))
+                .catch(err => console.error("❌ SW registration failed:", err));
         }
 
         let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
+        window.addEventListener("beforeinstallprompt", e => {
             e.preventDefault();
             deferredPrompt = e;
-            document.getElementById('installBtn').style.display = 'block';
+            document.getElementById("installBtn").style.display = "block";
         });
 
         function installApp() {
@@ -88,27 +86,40 @@
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then(() => {
                     deferredPrompt = null;
-                    document.getElementById('installBtn').style.display = 'none';
+                    document.getElementById("installBtn").style.display = "none";
                 });
             }
         }
 
         /* 💰 Monetag redirect logic */
         const monetagUrl = "https://otieu.com/4/10116241";
-        let adShown = false;
+        let adReady = true;
+        let inactivityTimer;
 
         function openMonetagAd() {
-            if (adShown) return;
-            adShown = true;
+            if (!adReady) return;
+            adReady = false;
             console.log("💰 Opening Monetag redirect:", monetagUrl);
             window.open(monetagUrl, "_blank");
         }
 
-        // Open once after page load
+        function resetInactivityTimer() {
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(() => {
+                console.log("🕒 User inactive for 15s — ad rearmed.");
+                adReady = true; // allow next ad trigger
+            }, 15000);
+        }
+
+        ["mousemove", "keydown", "scroll", "click", "touchstart"].forEach(evt => {
+            window.addEventListener(evt, resetInactivityTimer);
+        });
+        resetInactivityTimer(); // start initially
+
         window.addEventListener("load", () => {
             setTimeout(() => {
-                openMonetagAd();
-            }, 5000); // open 5s after load
+                openMonetagAd(); // open once 5s after load
+            }, 5000);
         });
     </script>
 </head>
@@ -133,9 +144,11 @@
     <button id="stopSoundBtn">🛑 Stop Sound</button>
     <button id="settingsBtn">⚙️</button>
 
-    <button id="installBtn" style="display:none; position:fixed; bottom:160px; right:20px;
-      background:#f4a261; color:white; border:none; border-radius:12px;
-      padding:10px 16px; font-size:16px; box-shadow:0 4px 8px rgba(0,0,0,0.3);">
+    <button id="installBtn" style="
+    display:none; position:fixed; bottom:160px; right:20px;
+    background:#f4a261; color:white; border:none; border-radius:12px;
+    padding:10px 16px; font-size:16px; box-shadow:0 4px 8px rgba(0,0,0,0.3);
+  ">
         📲 Install App
     </button>
 
@@ -165,14 +178,11 @@
 
     <script src="./script.js"></script>
     <script>
-        document.getElementById('installBtn').addEventListener('click', installApp);
+        document.getElementById("installBtn").addEventListener("click", installApp);
 
-        // 💰 Also trigger Monetag ad when clicking Refresh
-        const refreshBtn = document.getElementById('refreshBtn');
-        refreshBtn.addEventListener('click', () => {
-            setTimeout(() => {
-                openMonetagAd();
-            }, 1000); // open 1s after refresh click
+        const refreshBtn = document.getElementById("refreshBtn");
+        refreshBtn.addEventListener("click", () => {
+            setTimeout(() => openMonetagAd(), 1000);
         });
     </script>
 </body>
