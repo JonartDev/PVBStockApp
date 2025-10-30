@@ -1,68 +1,77 @@
-// 🌾 PVB Stock Alert - Service Worker
+/* =========================================================
+   🌐 PVB STOCK ALERT SERVICE WORKER
+   Supports notifications + offline caching
+   ========================================================= */
 
 const CACHE_NAME = "pvb-stock-cache-v1";
-const FILES_TO_CACHE = [
-  "./",
-  "./index.html",
-  "./manifest.json",
-  "https://cdn-icons-png.flaticon.com/512/4151/4151022.png"
+const APP_SHELL = [
+  "/", 
+  "/index.html",
+  "/style.css",
+  "/script.js",
+  "/icon.png"
 ];
 
-// ⚙️ Cache static files on install
-self.addEventListener("install", (event) => {
+// 🪣 Install & Cache
+self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES_TO_CACHE))
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(APP_SHELL))
+      .then(() => self.skipWaiting())
   );
-  self.skipWaiting();
+  console.log("✅ Service Worker installed and cached");
 });
 
-// ⚡ Activate new worker immediately
-self.addEventListener("activate", (event) => {
+// 🔁 Activate & Clean old caches
+self.addEventListener("activate", event => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(keys.map((key) => key !== CACHE_NAME && caches.delete(key)))
+    caches.keys().then(keys =>
+      Promise.all(keys.map(key => {
+        if (key !== CACHE_NAME) return caches.delete(key);
+      }))
     )
   );
+  console.log("🚀 Service Worker activated");
   self.clients.claim();
 });
 
-// 🌍 Serve cached files first
-self.addEventListener("fetch", (event) => {
+// 📦 Fetch cache-first fallback
+self.addEventListener("fetch", event => {
   event.respondWith(
-    caches.match(event.request).then((response) => response || fetch(event.request))
+    caches.match(event.request).then(response => 
+      response || fetch(event.request).catch(() => caches.match("/index.html"))
+    )
   );
 });
 
-// 🔔 Listen for messages from script.js
-self.addEventListener("message", (event) => {
+// 🔔 Receive message from client (show notifications)
+self.addEventListener("message", event => {
   if (event.data && event.data.type === "SHOW_NOTIFICATION") {
-    const data = event.data.payload;
-
-    event.waitUntil(
-      self.registration.showNotification("🚨 Rare Item Found!", {
-        body: data.message,
-        icon: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
-        badge: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
-        vibrate: [200, 100, 200],
-        requireInteraction: true,
-        data: { url: "./index.html" }
-      })
-    );
+    const { message } = event.data.payload;
+    self.registration.showNotification("🌱 PVB Stock Alert!", {
+      body: message,
+      icon: "/icon.png",
+      badge: "/icon.png",
+      vibrate: [200, 100, 200],
+      requireInteraction: true,
+      actions: [
+        { action: "stop", title: "🛑 Stop Alarm" }
+      ]
+    });
   }
 });
 
-// 📲 Handle notification clicks
-self.addEventListener("notificationclick", (event) => {
+// 🎯 Handle notification actions
+self.addEventListener("notificationclick", event => {
   event.notification.close();
-
-  event.waitUntil(
-    clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if (client.url.includes("index.html") && "focus" in client) {
-          return client.focus();
-        }
-      }
-      if (clients.openWindow) return clients.openWindow("./index.html");
-    })
-  );
+  if (event.action === "stop") {
+    // Optionally send message to all clients to stop sound
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => client.postMessage({ type: "STOP_ALARM" }));
+    });
+  } else {
+    event.waitUntil(
+      clients.openWindow("/")
+    );
+  }
 });

@@ -27,8 +27,7 @@ const ICONS = {
     "Water Bucket": "🪣", "Frost Grenade": "🧊", "Banana Gun": "🍌🔫",
     "Frost Blower": "❄️", "Carrot Launcher": "🥕🚀"
 };
-
-const alarmSound = new Audio("https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg");
+const alarmSound = new Audio("https://cdn.pixabay.com/audio/2022/03/15/audio_2f7b1dca2f.mp3");
 alarmSound.loop = true;
 
 if ("Notification" in window && Notification.permission !== "granted") {
@@ -130,14 +129,18 @@ function updateDateTime() {
 }
 
 /* 🌐 FETCH STOCK DATA */
+/* 🌐 FETCH STOCK DATA */
 async function fetchStockData(isRetry = false, isManual = false) {
     const refreshBtn = document.getElementById("refreshBtn");
-    refreshBtn.classList.add("spinning");
     const loadingOverlay = document.getElementById("loadingOverlay");
     const stockData = document.getElementById("stockData");
 
+    // Keep spinner active during manual refresh
+    if (isManual) refreshBtn.classList.add("spinning");
+
     try {
-        if (!isRetry || isManual) {
+        // 🌀 Keep loading overlay visible until new data arrives
+        if (!isRetry) {
             loadingOverlay.style.display = "flex";
             stockData.style.opacity = "0.4";
         }
@@ -156,21 +159,23 @@ async function fetchStockData(isRetry = false, isManual = false) {
 
         const latestTime = seeds[0]?.created_at;
         if (lastCreatedAt && lastCreatedAt === latestTime) {
-            console.log("⏳ No new data, retrying...");
+            console.log("⏳ No new data, still loading...");
+            // ⚠️ Do not hide the loader here — just retry silently
             setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
             return;
         }
 
+        // ✅ Only hide loader after detecting *new* data
         lastCreatedAt = latestTime;
         stockData.innerHTML = `
-      <div class="stock-item">
-        <div class="section-header"><div class="section-title">🌱 SEEDS STOCK</div></div>
-        ${renderItems(seeds, "seeds")}
-        <br><div class="section-title">⚙️ GEAR STOCK</div>
-        ${renderItems(gear, "gear")}
-        <div class="timestamp">Updated at: ${new Date(latestTime).toLocaleString()}</div>
-      </div>
-    `;
+            <div class="stock-item">
+                <div class="section-header"><div class="section-title">🌱 SEEDS STOCK</div></div>
+                ${renderItems(seeds, "seeds")}
+                <br><div class="section-title">⚙️ GEAR STOCK</div>
+                ${renderItems(gear, "gear")}
+                <div class="timestamp">Updated at: ${new Date(latestTime).toLocaleString()}</div>
+            </div>
+        `;
 
         const foundSeeds = selectedSeeds.filter(s =>
             seeds.some(item => item.display_name.toLowerCase().includes(s.toLowerCase()))
@@ -182,26 +187,96 @@ async function fetchStockData(isRetry = false, isManual = false) {
         if (foundSeeds.length || foundGears.length)
             triggerAlarm([...foundSeeds, ...foundGears]);
 
+        // 🟢 New data received — hide loader now
+        setTimeout(() => {
+            loadingOverlay.style.display = "none";
+            stockData.style.opacity = "1";
+        }, 600);
+
     } catch (err) {
         console.error("❌ Fetch error:", err);
         stockData.innerHTML = "<p>Error loading data. Retrying...</p>";
+        // ❌ Keep loading visible (don’t stop) while retrying
         setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
     } finally {
         refreshBtn.classList.remove("spinning");
         loadingOverlay.style.display = "none";
         loading.style.display = "none";
-
-        if (lastCreatedAt) {
-            setTimeout(() => {
-                loadingOverlay.style.display = "none";
-                stockData.style.opacity = "1";
-            }, 600);
-        } else {
-            console.log("⏳ Waiting for new data... keeping loader visible");
-        }
     }
-
 }
+
+// async function fetchStockData(isRetry = false, isManual = false) {
+//     const refreshBtn = document.getElementById("refreshBtn");
+//     refreshBtn.classList.add("spinning");
+//     const loadingOverlay = document.getElementById("loadingOverlay");
+//     const stockData = document.getElementById("stockData");
+
+//     try {
+//         if (!isRetry || isManual) {
+//             loadingOverlay.style.display = "flex";
+//             stockData.style.opacity = "0.4";
+//         }
+
+//         const timestamp = Date.now();
+//         const [seedsRes, gearRes] = await Promise.all([
+//             fetch(`https://pvbstockbackend.onrender.com/seed_proxy.php?t=${timestamp}`),
+//             fetch(`https://pvbstockbackend.onrender.com/gear_proxy.php?t=${timestamp}`)
+//         ]);
+//         const [seeds, gear] = await Promise.all([seedsRes.json(), gearRes.json()]);
+
+//         if (!Array.isArray(seeds) || !Array.isArray(gear)) {
+//             stockData.innerHTML = "<p>No stock data available.</p>";
+//             return;
+//         }
+
+//         const latestTime = seeds[0]?.created_at;
+//         if (lastCreatedAt && lastCreatedAt === latestTime) {
+//             console.log("⏳ No new data, retrying...");
+//             setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
+//             return;
+//         }
+
+//         lastCreatedAt = latestTime;
+//         stockData.innerHTML = `
+//       <div class="stock-item">
+//         <div class="section-header"><div class="section-title">🌱 SEEDS STOCK</div></div>
+//         ${renderItems(seeds, "seeds")}
+//         <br><div class="section-title">⚙️ GEAR STOCK</div>
+//         ${renderItems(gear, "gear")}
+//         <div class="timestamp">Updated at: ${new Date(latestTime).toLocaleString()}</div>
+//       </div>
+//     `;
+
+//         const foundSeeds = selectedSeeds.filter(s =>
+//             seeds.some(item => item.display_name.toLowerCase().includes(s.toLowerCase()))
+//         );
+//         const foundGears = selectedGears.filter(g =>
+//             gear.some(item => item.display_name.toLowerCase().includes(g.toLowerCase()))
+//         );
+
+//         if (foundSeeds.length || foundGears.length)
+//             triggerAlarm([...foundSeeds, ...foundGears]);
+
+//     } catch (err) {
+//         console.error("❌ Fetch error:", err);
+//         stockData.innerHTML = "<p>Error loading data. Retrying...</p>";
+//         setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
+//     } finally {
+//         refreshBtn.classList.remove("spinning");
+//         loadingOverlay.style.display = "none";
+//         loading.style.display = "none";
+
+//         if (lastCreatedAt) {
+//             setTimeout(() => {
+//                 loadingOverlay.style.display = "none";
+//                 stockData.style.opacity = "1";
+//             }, 600);
+//         } else {
+//             console.log("⏳ Waiting for new data... keeping loader visible");
+//         }
+//     }
+
+// }
 
 function renderItems(items, type) {
     return items.map(item => {
