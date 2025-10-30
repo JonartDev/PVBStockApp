@@ -99,7 +99,10 @@ async function fetchStockData(isRetry = false) {
     const stockData = document.getElementById("stockData");
 
     try {
-        if (!isRetry) loading.style.display = "block";
+        // 🟡 Show loading every time data is fetched
+        loading.style.display = "block";
+        loading.textContent = "⏳ Fetching latest stock data...";
+        stockData.style.opacity = "0.4";
 
         const timestamp = Date.now();
         const [seedsRes, gearRes] = await Promise.all([
@@ -115,21 +118,22 @@ async function fetchStockData(isRetry = false) {
 
         const latestTime = seeds[0]?.created_at;
         if (lastCreatedAt && lastCreatedAt === latestTime) {
+            loading.textContent = "🔄 Waiting for new updates...";
             setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
             return;
         }
 
         lastCreatedAt = latestTime;
         stockData.innerHTML = `
-      <div class="stock-item">
-        <div class="section-title">🌱 SEEDS STOCK</div>
-        ${renderItems(seeds, "seeds")}
-        <br>
-        <div class="section-title">⚙️ GEAR STOCK</div>
-        ${renderItems(gear, "gear")}
-        <div class="timestamp">Updated at: ${new Date(latestTime).toLocaleString()}</div>
-      </div>
-    `;
+          <div class="stock-item">
+            <div class="section-title">🌱 SEEDS STOCK</div>
+            ${renderItems(seeds, "seeds")}
+            <br>
+            <div class="section-title">⚙️ GEAR STOCK</div>
+            ${renderItems(gear, "gear")}
+            <div class="timestamp">Updated at: ${new Date(latestTime).toLocaleString()}</div>
+          </div>
+        `;
 
         const foundSeeds = selectedSeeds.filter(s =>
             seeds.some(item => item.display_name.toLowerCase().includes(s.toLowerCase()))
@@ -144,9 +148,15 @@ async function fetchStockData(isRetry = false) {
 
     } catch (err) {
         console.error("❌ Fetch error:", err);
+        loading.textContent = "❌ Error fetching data. Retrying...";
         stockData.innerHTML = "<p>Error loading data.</p>";
+        setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
     } finally {
-        loading.style.display = "none";
+        // ✅ Hide loading after fetch completes
+        setTimeout(() => {
+            loading.style.display = "none";
+            stockData.style.opacity = "1";
+        }, 500);
     }
 }
 

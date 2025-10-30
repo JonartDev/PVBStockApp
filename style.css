@@ -170,3 +170,25 @@
      background: #2a9d8f;
      color: white;
  }
+
+ .loading {
+     text-align: center;
+     font-size: 18px;
+     color: #ff6f61;
+     margin: 10px 0;
+     animation: pulse 1.5s infinite;
+ }
+
+ @keyframes pulse {
+     0% {
+         opacity: 0.4;
+     }
+
+     50% {
+         opacity: 1;
+     }
+
+     100% {
+         opacity: 0.4;
+     }
+ }
