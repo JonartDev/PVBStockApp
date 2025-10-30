@@ -1,77 +1,87 @@
-/* =========================================================
-   🌐 PVB STOCK ALERT SERVICE WORKER
-   Supports notifications + offline caching
-   ========================================================= */
+// 🌾 PVB Stock Alert - Optimized Service Worker (v2)
+// Works on GitHub Pages + Median APK (offline + notifications)
 
-const CACHE_NAME = "pvb-stock-cache-v1";
-const APP_SHELL = [
-  "/", 
-  "/index.html",
-  "/style.css",
-  "/script.js",
-  "/icon.png"
+const CACHE_NAME = "pvb-stock-cache-v2";
+const FILES_TO_CACHE = [
+  "./",
+  "./index.html",
+  "./style.css",
+  "./script.js",
+  "./manifest.json",
+  "https://actions.google.com/sounds/v1/alarms/alarm_clock.ogg",
+  "https://cdn-icons-png.flaticon.com/512/4151/4151022.png"
 ];
 
-// 🪣 Install & Cache
-self.addEventListener("install", event => {
+// 🧩 INSTALL: Pre-cache important files
+self.addEventListener("install", (event) => {
+  console.log("📦 Installing Service Worker...");
   event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(FILES_TO_CACHE))
   );
-  console.log("✅ Service Worker installed and cached");
+  self.skipWaiting();
 });
 
-// 🔁 Activate & Clean old caches
-self.addEventListener("activate", event => {
+// ⚡ ACTIVATE: Clean up old caches
+self.addEventListener("activate", (event) => {
+  console.log("✅ Activating Service Worker...");
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.map(key => {
-        if (key !== CACHE_NAME) return caches.delete(key);
-      }))
+    caches.keys().then((keys) =>
+      Promise.all(
+        keys.map((key) => key !== CACHE_NAME && caches.delete(key))
+      )
     )
   );
-  console.log("🚀 Service Worker activated");
   self.clients.claim();
 });
 
-// 📦 Fetch cache-first fallback
-self.addEventListener("fetch", event => {
+// 🌐 FETCH: Serve from cache, then update from network
+self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") return;
   event.respondWith(
-    caches.match(event.request).then(response => 
-      response || fetch(event.request).catch(() => caches.match("/index.html"))
-    )
+    caches.match(event.request).then((cached) => {
+      const fetchPromise = fetch(event.request)
+        .then((response) => {
+          if (!response || response.status !== 200 || response.type !== "basic")
+            return response;
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+          return response;
+        })
+        .catch(() => cached);
+      return cached || fetchPromise;
+    })
   );
 });
 
-// 🔔 Receive message from client (show notifications)
-self.addEventListener("message", event => {
+// 🔔 RECEIVE Notification requests from app (script.js)
+self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SHOW_NOTIFICATION") {
-    const { message } = event.data.payload;
-    self.registration.showNotification("🌱 PVB Stock Alert!", {
-      body: message,
-      icon: "/icon.png",
-      badge: "/icon.png",
-      vibrate: [200, 100, 200],
+    const data = event.data.payload || {};
+    console.log("📢 Showing Notification:", data.message);
+    self.registration.showNotification("🚨 Rare Item Found!", {
+      body: data.message,
+      icon: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
+      badge: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
+      vibrate: [300, 200, 300],
       requireInteraction: true,
       actions: [
-        { action: "stop", title: "🛑 Stop Alarm" }
+        { action: "open", title: "Open App" },
+        { action: "dismiss", title: "Dismiss" }
       ]
     });
   }
 });
 
-// 🎯 Handle notification actions
-self.addEventListener("notificationclick", event => {
+// 🪄 Handle notification click (to reopen app)
+self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  if (event.action === "stop") {
-    // Optionally send message to all clients to stop sound
-    self.clients.matchAll().then(clients => {
-      clients.forEach(client => client.postMessage({ type: "STOP_ALARM" }));
-    });
-  } else {
-    event.waitUntil(
-      clients.openWindow("/")
-    );
-  }
+  if (event.action === "dismiss") return;
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) return client.focus();
+      }
+      if (clients.openWindow) return clients.openWindow("./index.html");
+    })
+  );
 });

@@ -27,7 +27,8 @@ const ICONS = {
     "Water Bucket": "🪣", "Frost Grenade": "🧊", "Banana Gun": "🍌🔫",
     "Frost Blower": "❄️", "Carrot Launcher": "🥕🚀"
 };
-const alarmSound = new Audio("https://cdn.pixabay.com/audio/2022/03/15/audio_2f7b1dca2f.mp3");
+
+const alarmSound = new Audio("https://actions.google.com/sounds/v1/alarms/spaceship_alarm.ogg"); 
 alarmSound.loop = true;
 
 if ("Notification" in window && Notification.permission !== "granted") {
