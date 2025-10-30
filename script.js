@@ -1,5 +1,5 @@
 /* =========================================================
-   🌱 PVB STOCK ALERT SYSTEM - Fixed Button Events Version
+   🌱 PVB STOCK ALERT SYSTEM - with Loading Overlay
    ========================================================= */
 
 const REFRESH_INTERVAL = 5 * 60;
@@ -32,7 +32,6 @@ if ("Notification" in window && Notification.permission !== "granted") {
     Notification.requestPermission();
 }
 
-/* 🔔 Notification */
 function showNotification(foundItems) {
     if ("Notification" in window && Notification.permission === "granted") {
         new Notification("🚨 Rare Item Found!", {
@@ -45,33 +44,46 @@ function showNotification(foundItems) {
     if (navigator.vibrate) navigator.vibrate([300, 200, 300]);
 }
 
-/* 🚨 Alarm + Popup */
+let audioUnlocked = false;
+function unlockAudio() {
+    if (audioUnlocked) return;
+    const tempSound = new Audio();
+    tempSound.play().catch(() => { });
+    alarmSound.play().then(() => {
+        alarmSound.pause();
+        alarmSound.currentTime = 0;
+        audioUnlocked = true;
+        console.log("🔊 Audio unlocked by user gesture");
+    }).catch(() => console.warn("🔇 Waiting for user interaction..."));
+}
+document.addEventListener("click", unlockAudio, { once: true });
+document.addEventListener("touchstart", unlockAudio, { once: true });
+
 function triggerAlarm(foundItems) {
-    alarmSound.play().catch(() => console.warn("🔇 Autoplay blocked."));
+    console.log("🚨 Alarm triggered for:", foundItems.join(", "));
     showPopup("🚨 " + foundItems.join(", ") + " found!");
     document.body.style.backgroundColor = "#ffcccc";
     document.getElementById("stopSoundBtn").style.display = "block";
-
+    alarmSound.currentTime = 0;
+    alarmSound.play().catch(() => console.warn("🔇 Autoplay blocked"));
     if (alarmInterval) clearInterval(alarmInterval);
     alarmInterval = setInterval(() => {
         showNotification(foundItems);
         playBeepLoop();
-        if ("wakeLock" in navigator) navigator.wakeLock.request("screen").catch(() => { });
         if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
     }, 15000);
 }
 
-/* 🛑 Stop Sound */
 function stopSound() {
+    console.log("🛑 Sound stopped.");
     alarmSound.pause();
     alarmSound.currentTime = 0;
-    document.body.style.backgroundColor = "#f4f4f9";
-    document.getElementById("stopSoundBtn").style.display = "none";
     clearInterval(alarmInterval);
     alarmInterval = null;
+    document.body.style.backgroundColor = "#f4f4f9";
+    document.getElementById("stopSoundBtn").style.display = "none";
 }
 
-/* 🎵 Backup Beep */
 function playBeepLoop() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = audioCtx.createOscillator();
@@ -81,10 +93,9 @@ function playBeepLoop() {
     gain.gain.value = 0.1;
     osc.connect(gain).connect(audioCtx.destination);
     osc.start();
-    setTimeout(() => osc.stop(), 1000);
+    setTimeout(() => osc.stop(), 800);
 }
 
-/* 🕒 Update Time */
 function updateDateTime() {
     const now = new Date();
     document.getElementById("timeDisplay").textContent =
@@ -94,23 +105,26 @@ function updateDateTime() {
         });
 }
 
-/* 🌐 Fetch Data */
-async function fetchStockData(isRetry = false) {
-    const loading = document.getElementById("loading");
+/* 🌐 FETCH STOCK DATA */
+async function fetchStockData(isRetry = false, isManual = false) {
+    const refreshBtn = document.getElementById("refreshBtn");
+    refreshBtn.classList.add("spinning");
+    const loadingOverlay = document.getElementById("loadingOverlay");
     const stockData = document.getElementById("stockData");
 
     try {
-        loading.style.display = "block";
-        loading.textContent = "⏳ Fetching latest stock data...";
-        stockData.style.opacity = "0.4";
+        if (!isRetry || isManual) {
+            loadingOverlay.style.display = "flex";
+            stockData.style.opacity = "0.4";
+        }
 
         const timestamp = Date.now();
         const [seedsRes, gearRes] = await Promise.all([
             fetch(`https://pvbstockbackend.onrender.com/seed_proxy.php?t=${timestamp}`),
             fetch(`https://pvbstockbackend.onrender.com/gear_proxy.php?t=${timestamp}`)
         ]);
-
         const [seeds, gear] = await Promise.all([seedsRes.json(), gearRes.json()]);
+
         if (!Array.isArray(seeds) || !Array.isArray(gear)) {
             stockData.innerHTML = "<p>No stock data available.</p>";
             return;
@@ -118,24 +132,21 @@ async function fetchStockData(isRetry = false) {
 
         const latestTime = seeds[0]?.created_at;
         if (lastCreatedAt && lastCreatedAt === latestTime) {
-            loading.textContent = "🔄 No new updates yet.";
-            return; // stop here, wait for the next 5-minute timer
+            console.log("⏳ No new data, retrying...");
+            setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
+            return;
         }
-
 
         lastCreatedAt = latestTime;
         stockData.innerHTML = `
-            <div class="stock-item">
-                <div class="section-header">
-                    <div class="section-title">🌱 SEEDS STOCK</div>
-                </div>
-                ${renderItems(seeds, "seeds")}
-                <br>
-                <div class="section-title">⚙️ GEAR STOCK</div>
-                ${renderItems(gear, "gear")}
-                <div class="timestamp">Updated at: ${new Date(latestTime).toLocaleString()}</div>
-            </div>
-        `;
+      <div class="stock-item">
+        <div class="section-header"><div class="section-title">🌱 SEEDS STOCK</div></div>
+        ${renderItems(seeds, "seeds")}
+        <br><div class="section-title">⚙️ GEAR STOCK</div>
+        ${renderItems(gear, "gear")}
+        <div class="timestamp">Updated at: ${new Date(latestTime).toLocaleString()}</div>
+      </div>
+    `;
 
         const foundSeeds = selectedSeeds.filter(s =>
             seeds.some(item => item.display_name.toLowerCase().includes(s.toLowerCase()))
@@ -149,30 +160,27 @@ async function fetchStockData(isRetry = false) {
 
     } catch (err) {
         console.error("❌ Fetch error:", err);
-        loading.textContent = "❌ Error fetching data. Retrying...";
-        stockData.innerHTML = "<p>Error loading data.</p>";
+        stockData.innerHTML = "<p>Error loading data. Retrying...</p>";
         setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
     } finally {
-        setTimeout(() => {
-            loading.style.display = "none";
-            stockData.style.opacity = "1";
-        }, 500);
+        if (!isRetry || isManual) {
+            setTimeout(() => {
+                refreshBtn.classList.remove("spinning");
+                loading.style.display = "none";
+                loadingOverlay.style.display = "none";
+                stockData.style.opacity = "1";
+            }, 600);
+        }
     }
 }
 
-/* 🧾 Render */
 function renderItems(items, type) {
     return items.map(item => {
         const icon = ICONS[item.display_name] || (type === "seeds" ? "🌱" : "⚙️");
-        return `
-            <div class="stock-list">
-                <span>${icon} ${item.display_name}</span>
-                <span>x${item.multiplier}</span>
-            </div>`;
+        return `<div class="stock-list"><span>${icon} ${item.display_name}</span><span>x${item.multiplier}</span></div>`;
     }).join("");
 }
 
-/* ⏱️ Timer */
 function startTimer() {
     const timerDisplay = document.getElementById("timer");
     setInterval(() => {
@@ -187,7 +195,7 @@ function startTimer() {
     }, 1000);
 }
 
-/* ⚙️ Settings */
+/* ⚙️ SETTINGS */
 const modal = document.getElementById("settingsModal");
 const seedSettings = document.getElementById("seedSettings");
 const gearSettings = document.getElementById("gearSettings");
@@ -195,15 +203,13 @@ const gearSettings = document.getElementById("gearSettings");
 function openSettings() {
     seedSettings.innerHTML = ALL_SEEDS.map(seed =>
         `<div class="seed-option"><input type="checkbox" id="${seed}" ${selectedSeeds.includes(seed) ? "checked" : ""}>
-        <label for="${seed}">${ICONS[seed] || "🌱"} ${seed}</label></div>`).join("");
+    <label for="${seed}">${ICONS[seed] || "🌱"} ${seed}</label></div>`).join("");
     gearSettings.innerHTML = ALL_GEARS.map(gear =>
         `<div class="seed-option"><input type="checkbox" id="${gear}" ${selectedGears.includes(gear) ? "checked" : ""}>
-        <label for="${gear}">${ICONS[gear] || "⚙️"} ${gear}</label></div>`).join("");
+    <label for="${gear}">${ICONS[gear] || "⚙️"} ${gear}</label></div>`).join("");
     modal.style.display = "flex";
 }
-
 function closeSettings() { modal.style.display = "none"; }
-
 function saveSettings() {
     selectedSeeds = [...seedSettings.querySelectorAll("input:checked")].map(el => el.id);
     selectedGears = [...gearSettings.querySelectorAll("input:checked")].map(el => el.id);
@@ -212,7 +218,6 @@ function saveSettings() {
     alert("✅ Settings saved!");
     closeSettings();
 }
-
 function switchTab(tab) {
     document.getElementById("tabSeeds").classList.toggle("active", tab === "seeds");
     document.getElementById("tabGears").classList.toggle("active", tab === "gears");
@@ -220,38 +225,7 @@ function switchTab(tab) {
     gearSettings.style.display = tab === "gears" ? "block" : "none";
 }
 
-/* 🔔 Popup */
-function showPopup(message) {
-    const popup = document.getElementById("popupNotification");
-    const popupMsg = document.getElementById("popupMessage");
-    popupMsg.textContent = message;
-    popup.classList.add("show");
-    setTimeout(() => popup.classList.remove("show"), 5000);
-}
-function hidePopup() {
-    document.getElementById("popupNotification").classList.remove("show");
-}
-
-/* 🧠 Init */
-document.addEventListener("click", () => {
-    alarmSound.play().then(() => {
-        alarmSound.pause(); alarmSound.currentTime = 0;
-    }).catch(() => { });
-}, { once: true });
-/* 🧠 Init */
-document.addEventListener("DOMContentLoaded", () => {
-    // Ensure buttons always work even after re-renders
-    document.getElementById("stopSoundBtn").addEventListener("click", stopSound);
-    document.getElementById("refreshBtn").addEventListener("click", fetchStockData);
-    document.getElementById("settingsBtn").addEventListener("click", openSettings);
-
-    setInterval(updateDateTime, 1000);
-    updateDateTime();
-    fetchStockData();
-    startTimer();
-});
-
-/* 🔔 Popup (Messenger style) */
+/* 🔔 POPUP */
 function showPopup(message) {
     const popup = document.getElementById("popupNotification");
     const popupMsg = document.getElementById("popupMessage");
@@ -259,17 +233,17 @@ function showPopup(message) {
     popup.classList.add("show");
     setTimeout(() => popup.classList.remove("show"), 7000);
 }
-
 function hidePopup() {
     document.getElementById("popupNotification").classList.remove("show");
 }
 
-// ✅ Button bindings — stay active forever
-document.getElementById("stopSoundBtn").addEventListener("click", stopSound);
-document.getElementById("refreshBtn").addEventListener("click", fetchStockData);
-document.getElementById("settingsBtn").addEventListener("click", openSettings);
-
-setInterval(updateDateTime, 1000);
-updateDateTime();
-fetchStockData();
-startTimer();
+/* 🧠 INIT */
+document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("stopSoundBtn").addEventListener("click", stopSound);
+    document.getElementById("refreshBtn").addEventListener("click", () => fetchStockData(false, true));
+    document.getElementById("settingsBtn").addEventListener("click", openSettings);
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+    fetchStockData();
+    startTimer();
+});
