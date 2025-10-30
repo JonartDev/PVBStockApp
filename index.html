@@ -5,9 +5,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>🌾 PVB Live Stock Updates</title>
-    <link rel="stylesheet" href="./style.css">
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#2a9d8f">
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="theme-color" content="#2a9d8f" />
 
     <style>
         @keyframes spin {
@@ -32,7 +32,6 @@
         .refresh-top-btn.spinning {
             animation: spin 1s linear infinite;
             color: #2ecc71;
-            /* green */
             filter: drop-shadow(0 0 6px #2ecc71);
         }
 
@@ -77,7 +76,6 @@
                 .catch(err => console.error('❌ SW registration failed:', err));
         }
 
-
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
@@ -94,6 +92,24 @@
                 });
             }
         }
+
+        /* 💰 Monetag redirect logic */
+        const monetagUrl = "https://otieu.com/4/10116241";
+        let adShown = false;
+
+        function openMonetagAd() {
+            if (adShown) return;
+            adShown = true;
+            console.log("💰 Opening Monetag redirect:", monetagUrl);
+            window.open(monetagUrl, "_blank");
+        }
+
+        // Open once after page load
+        window.addEventListener("load", () => {
+            setTimeout(() => {
+                openMonetagAd();
+            }, 5000); // open 5s after load
+        });
     </script>
 </head>
 
@@ -116,9 +132,10 @@
 
     <button id="stopSoundBtn">🛑 Stop Sound</button>
     <button id="settingsBtn">⚙️</button>
+
     <button id="installBtn" style="display:none; position:fixed; bottom:160px; right:20px;
-    background:#f4a261; color:white; border:none; border-radius:12px;
-    padding:10px 16px; font-size:16px; box-shadow:0 4px 8px rgba(0,0,0,0.3);">
+      background:#f4a261; color:white; border:none; border-radius:12px;
+      padding:10px 16px; font-size:16px; box-shadow:0 4px 8px rgba(0,0,0,0.3);">
         📲 Install App
     </button>
 
@@ -149,6 +166,14 @@
     <script src="./script.js"></script>
     <script>
         document.getElementById('installBtn').addEventListener('click', installApp);
+
+        // 💰 Also trigger Monetag ad when clicking Refresh
+        const refreshBtn = document.getElementById('refreshBtn');
+        refreshBtn.addEventListener('click', () => {
+            setTimeout(() => {
+                openMonetagAd();
+            }, 1000); // open 1s after refresh click
+        });
     </script>
 </body>
 
