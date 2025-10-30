@@ -1,0 +1,20 @@
+{
+    "name": "PVB Live Stock Updates",
+    "short_name": "PVB Stocks",
+    "start_url": "./index.html",
+    "display": "standalone",
+    "background_color": "#2a9d8f",
+    "theme_color": "#2a9d8f",
+    "icons": [
+        {
+            "src": "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

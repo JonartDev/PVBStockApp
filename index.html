@@ -4,36 +4,87 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>🌾 Live Stock Updates</title>
+    <title>🌾 PVB Live Stock Updates</title>
     <link rel="stylesheet" href="./style.css">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#2a9d8f">
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js')
+                .then(() => console.log('✅ Service Worker registered'))
+                .catch(err => console.error('❌ Service Worker failed', err));
+        }
+
+        // ✅ PWA install prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('installBtn').style.display = 'block';
+        });
+
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => {
+                    deferredPrompt = null;
+                    document.getElementById('installBtn').style.display = 'none';
+                });
+            }
+        }
+    </script>
 </head>
 
 <body>
-    <h1>🌾 PVB Live Stock Updates</h1>
+    <h1>
+        🌾 PVB Live Stock Updates
+        <button id="refreshBtn" class="refresh-top-btn" title="Refresh Data">🔄</button>
+    </h1>
+
     <div id="loading" class="loading">Loading data...</div>
     <div id="stockData" class="stock-container"></div>
     <div id="timeDisplay"></div>
     <div id="timer"></div>
 
+    <!-- 🛑 Stop + ⚙️ Settings + 📲 Install Buttons -->
     <button id="stopSoundBtn">🛑 Stop Sound</button>
+
     <button id="settingsBtn">⚙️</button>
 
-    <div id="settingsModal">
-        <div id="settingsContent">
+    <button id="installBtn">
+        📲 Install App
+    </button>
+
+    <!-- ⚙️ Settings Modal -->
+    <div id="settingsModal" class="modal-overlay" style="display:none;">
+        <div id="settingsContent" class="modal-content">
             <h2>🔔 Notification Settings</h2>
+
             <div class="tab">
                 <button id="tabSeeds" class="active" onclick="switchTab('seeds')">🌱 Seeds</button>
                 <button id="tabGears" onclick="switchTab('gears')">⚙️ Gears</button>
             </div>
+
             <div id="seedSettings"></div>
-            <div id="gearSettings" style="display: none;"></div>
-            <button class="btn-save" onclick="saveSettings()">💾 Save</button>
-            <button class="btn-close" onclick="closeSettings()">❌ Close</button>
+            <div id="gearSettings" style="display:none;"></div>
+
+            <div class="modal-buttons">
+                <button class="btn-save" onclick="saveSettings()">💾 Save</button>
+                <button class="btn-close" onclick="closeSettings()">❌ Close</button>
+            </div>
         </div>
     </div>
 
-    <script src="./script.js"></script>
+    <!-- 🔔 Floating Notification Popup -->
+    <div id="popupNotification" class="notification-popup">
+        <div class="popup-icon">🔔</div>
+        <div class="popup-content" id="popupMessage">New update detected!</div>
+        <button class="popup-close" onclick="hidePopup()">✖</button>
+    </div>
 
+    <script src="./script.js"></script>
 </body>
+
 
 </html>
