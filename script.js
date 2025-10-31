@@ -255,79 +255,6 @@ async function fetchStockData(isRetry = false, isManual = false) {
     }
 }
 
-// async function fetchStockData(isRetry = false, isManual = false) {
-//     const refreshBtn = document.getElementById("refreshBtn");
-//     refreshBtn.classList.add("spinning");
-//     const loadingOverlay = document.getElementById("loadingOverlay");
-//     const stockData = document.getElementById("stockData");
-
-//     try {
-//         if (!isRetry || isManual) {
-//             loadingOverlay.style.display = "flex";
-//             stockData.style.opacity = "0.4";
-//         }
-
-//         const timestamp = Date.now();
-//         const [seedsRes, gearRes] = await Promise.all([
-//             fetch(`https://pvbstockbackend.onrender.com/seed_proxy.php?t=${timestamp}`),
-//             fetch(`https://pvbstockbackend.onrender.com/gear_proxy.php?t=${timestamp}`)
-//         ]);
-//         const [seeds, gear] = await Promise.all([seedsRes.json(), gearRes.json()]);
-
-//         if (!Array.isArray(seeds) || !Array.isArray(gear)) {
-//             stockData.innerHTML = "<p>No stock data available.</p>";
-//             return;
-//         }
-
-//         const latestTime = seeds[0]?.created_at;
-//         if (lastCreatedAt && lastCreatedAt === latestTime) {
-//             console.log("⏳ No new data, retrying...");
-//             setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
-//             return;
-//         }
-
-//         lastCreatedAt = latestTime;
-//         stockData.innerHTML = `
-//       <div class="stock-item">
-//         <div class="section-header"><div class="section-title">🌱 SEEDS STOCK</div></div>
-//         ${renderItems(seeds, "seeds")}
-//         <br><div class="section-title">⚙️ GEAR STOCK</div>
-//         ${renderItems(gear, "gear")}
-//         <div class="timestamp">Updated at: ${new Date(latestTime).toLocaleString()}</div>
-//       </div>
-//     `;
-
-//         const foundSeeds = selectedSeeds.filter(s =>
-//             seeds.some(item => item.display_name.toLowerCase().includes(s.toLowerCase()))
-//         );
-//         const foundGears = selectedGears.filter(g =>
-//             gear.some(item => item.display_name.toLowerCase().includes(g.toLowerCase()))
-//         );
-
-//         if (foundSeeds.length || foundGears.length)
-//             triggerAlarm([...foundSeeds, ...foundGears]);
-
-//     } catch (err) {
-//         console.error("❌ Fetch error:", err);
-//         stockData.innerHTML = "<p>Error loading data. Retrying...</p>";
-//         setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);
-//     } finally {
-//         refreshBtn.classList.remove("spinning");
-//         loadingOverlay.style.display = "none";
-//         loading.style.display = "none";
-
-//         if (lastCreatedAt) {
-//             setTimeout(() => {
-//                 loadingOverlay.style.display = "none";
-//                 stockData.style.opacity = "1";
-//             }, 600);
-//         } else {
-//             console.log("⏳ Waiting for new data... keeping loader visible");
-//         }
-//     }
-
-// }
-
 function renderItems(items, type) {
     return items.map(item => {
         const icon = ICONS[item.display_name] || (type === "seeds" ? "🌱" : "⚙️");
@@ -401,7 +328,11 @@ document.addEventListener("DOMContentLoaded", () => {
     updateDateTime();
     fetchStockData();
     startTimer();
-
+    window.openSettings = openSettings;
+    window.closeSettings = closeSettings;
+    window.saveSettings = saveSettings;
+    window.switchTab = switchTab;
+    window.hidePopup = hidePopup;
     // 🔔 Listen for background PLAY_ALARM message from Service Worker
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.addEventListener("message", (event) => {
