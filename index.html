@@ -65,7 +65,35 @@
             font-weight: 500;
         }
     </style>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
+    <script>
+        // Initialize Firebase Messaging
+        const messaging = firebase.messaging();
 
+        async function requestNotificationPermission() {
+            const permission = await Notification.requestPermission();
+            if (permission === "granted") {
+                const token = await messaging.getToken({
+                    vapidKey: "BM3B9iuetdwzEHYFJyG6pIgo2TaIWUXhn4RZPhIDcKM31GQUMoaPRhf4_dHkqF8sgZFxOFjwTVh4WDUQm4dvTP4"
+                });
+                console.log("✅ FCM Token:", token);
+                alert("Your FCM token:\n" + token);
+                // (Optional) Save to your backend or localStorage
+            } else {
+                console.warn("🚫 Notification permission denied.");
+            }
+        }
+
+        requestNotificationPermission();
+
+        // Foreground message handler
+        messaging.onMessage((payload) => {
+            console.log("📩 Message received: ", payload);
+            const { title, body } = payload.notification;
+            new Notification(title, { body });
+        });
+    </script>
     <script>
         /* 🧩 PWA Setup */
         if ("serviceWorker" in navigator) {
