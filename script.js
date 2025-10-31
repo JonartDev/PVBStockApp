@@ -32,8 +32,11 @@ const alarmSound = new Audio("https://actions.google.com/sounds/v1/alarms/spaces
 alarmSound.loop = true;
 
 if ("Notification" in window && Notification.permission !== "granted") {
-    Notification.requestPermission();
+    Notification.requestPermission().then(permission => {
+        console.log("Notification permission:", permission);
+    });
 }
+
 
 // 🔔 Show Messenger-like popup + system notification
 function showNotification(foundItems) {

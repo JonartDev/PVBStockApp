@@ -54,9 +54,16 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SHOW_NOTIFICATION") {
     const data = event.data.payload || {};
-    showPvbNotification(data.title || "🚨 Stock Alert!", data.message || "A rare item appeared!");
+    self.registration.showNotification("🚨 Rare Item Found!", {
+      body: data.message,
+      icon: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
+      badge: "https://cdn-icons-png.flaticon.com/512/4151/4151022.png",
+      vibrate: [300, 200, 300],
+      requireInteraction: true
+    });
   }
 });
+
 
 // 📢 Push event (for future Firebase Cloud Messaging integration)
 self.addEventListener("push", (event) => {
