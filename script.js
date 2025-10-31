@@ -1,6 +1,50 @@
 /* =========================================================
    🌱 PVB STOCK ALERT SYSTEM - with Loading Overlay + Median Support
    ========================================================= */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-app.js";
+import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/12.5.0/firebase-messaging.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyBCHgS3WNcSslllZP3tNhTVnn5zNCrvsEQ",
+    authDomain: "pvb-stock-alert.firebaseapp.com",
+    projectId: "pvb-stock-alert",
+    storageBucket: "pvb-stock-alert.firebasestorage.app",
+    messagingSenderId: "175426651869",
+    appId: "1:175426651869:web:5293d6a67b206bd2dafd34",
+    measurementId: "G-SPM843E395"
+};
+
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
+
+// Register the service worker
+navigator.serviceWorker.register('./firebase-messaging-sw.js')
+    .then((registration) => {
+        // console.log('Service Worker registered:', registration);
+
+        // Request permission for notifications
+        Notification.requestPermission().then(permission => {
+            if (permission === 'granted') {
+                console.log('Notification permission granted.');
+
+                getToken(messaging, {
+                    vapidKey: 'BM3B9iuetdwzEHYFJyG6pIgo2TaIWUXhn4RZPhIDcKM31GQUMoaPRhf4_dHkqF8sgZFxOFjwTVh4WDUQm4dvTP4',
+                    serviceWorkerRegistration: registration
+                }).then((token) => {
+                    // console.log('FCM Token:', token);
+                    // Save this token to your database if you want to send targeted messages
+                });
+            } else {
+                console.log('Permission not granted for notifications');
+            }
+        });
+    });
+
+// Handle messages when app is open
+onMessage(messaging, (payload) => {
+    console.log('Message received in foreground:', payload);
+    alert(payload.notification.title + ": " + payload.notification.body);
+});
 
 const REFRESH_INTERVAL = 5 * 60;
 const RETRY_DELAY = 5;
@@ -137,6 +181,7 @@ function updateDateTime() {
 async function fetchStockData(isRetry = false, isManual = false) {
     const refreshBtn = document.getElementById("refreshBtn");
     const loadingOverlay = document.getElementById("loadingOverlay");
+    const loading = document.getElementById("loading");
     const stockData = document.getElementById("stockData");
 
     // Keep spinner active during manual refresh
@@ -163,6 +208,7 @@ async function fetchStockData(isRetry = false, isManual = false) {
 
         const latestTime = seeds[0]?.created_at;
         if (lastCreatedAt && lastCreatedAt === latestTime) {
+            loading.style.display = "flex";
             console.log("⏳ No new data, still loading...");
             // ⚠️ Do not hide the loader here — just retry silently
             setTimeout(() => fetchStockData(true), RETRY_DELAY * 1000);

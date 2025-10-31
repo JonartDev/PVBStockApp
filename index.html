@@ -4,67 +4,13 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/x-icon"
+        href="https://plantvsbrainrotstock.com/wp-content/uploads/2025/09/logo_150x150.png">
     <title>🌾 PVB Live Stock Updates</title>
     <link rel="stylesheet" href="./style.css" />
     <link rel="manifest" href="./manifest.json" />
     <meta name="theme-color" content="#2a9d8f" />
 
-    <style>
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
-            100% {
-                transform: rotate(360deg);
-            }
-        }
-
-        .refresh-top-btn {
-            font-size: 20px;
-            border: none;
-            background: none;
-            cursor: pointer;
-            transition: transform 0.2s ease, color 0.3s ease, filter 0.3s ease;
-        }
-
-        .refresh-top-btn.spinning {
-            animation: spin 1s linear infinite;
-            color: #2ecc71;
-            filter: drop-shadow(0 0 6px #2ecc71);
-        }
-
-        #loadingOverlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(3px);
-            z-index: 9999;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-
-        .loader {
-            border: 6px solid #f3f3f3;
-            border-top: 6px solid #4CAF50;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
-
-        .loading-text {
-            font-size: 18px;
-            color: #333;
-            margin-top: 10px;
-            font-weight: 500;
-        }
-    </style>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
     <script>
@@ -150,6 +96,62 @@
             }, 5000);
         });
     </script>
+    <style>
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .refresh-top-btn {
+            font-size: 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            transition: transform 0.2s ease, color 0.3s ease, filter 0.3s ease;
+        }
+
+        .refresh-top-btn.spinning {
+            animation: spin 1s linear infinite;
+            color: #2ecc71;
+            filter: drop-shadow(0 0 6px #2ecc71);
+        }
+
+        #loadingOverlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(3px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loader {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #4CAF50;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            font-size: 18px;
+            color: #333;
+            margin-top: 10px;
+            font-weight: 500;
+        }
+    </style>
 </head>
 
 <body>
@@ -204,7 +206,7 @@
         <button class="popup-close" onclick="hidePopup()">✖</button>
     </div>
 
-    <script src="./script.js"></script>
+    <script type="module" src="./script.js"></script>
     <script>
         document.getElementById("installBtn").addEventListener("click", installApp);
 
