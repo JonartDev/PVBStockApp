@@ -21,7 +21,7 @@ let selectedGears = JSON.parse(localStorage.getItem("selectedGears")) || ALL_GEA
 
 const ICONS = {
     "Cactus": "🌵", "Strawberry": "🍓", "Pumpkin": "🎃", "Sunflower": "🌻",
-    "Dragon Fruit": "🐉", "Eggplant": "🍆", "Watermelon": "🍉", "Grape Seed": "🍇",
+    "Dragon Fruit": "🐉", "Eggplant": "🍆", "Watermelon": "🍉", "Grape": "🍇",
     "Cocotank": "🥥", "Carnivorous Plant": "🪴", "Mr Carrot": "🥕", "Tomatrio": "🍅",
     "Shroombino": "🍄", "Mango": "🥭", "King Limone": "🍋",
     "Water Bucket": "🪣", "Frost Grenade": "🧊", "Banana Gun": "🍌🔫",
@@ -148,8 +148,8 @@ async function fetchStockData(isRetry = false, isManual = false) {
 
         const timestamp = Date.now();
         const [seedsRes, gearRes] = await Promise.all([
-            fetch(`./seed_proxy.php?t=${timestamp}`),
-            fetch(`./gear_proxy.php?t=${timestamp}`)
+            fetch(`https://pvbstockbackendnew.onrender.com/seed_proxy.php?t=${timestamp}`),
+            fetch(`https://pvbstockbackendnew.onrender.com/gear_proxy.php?t=${timestamp}`)
         ]);
         const [seeds, gear] = await Promise.all([seedsRes.json(), gearRes.json()]);
 
