@@ -28,7 +28,7 @@ const ICONS = {
     "Frost Blower": "❄️", "Carrot Launcher": "🥕🚀"
 };
 
-const alarmSound = new Audio("https://actions.google.com/sounds/v1/alarms/spaceship_alarm.ogg"); 
+const alarmSound = new Audio("https://actions.google.com/sounds/v1/alarms/spaceship_alarm.ogg");
 alarmSound.loop = true;
 
 if ("Notification" in window && Notification.permission !== "granted") {
@@ -343,6 +343,7 @@ function hidePopup() {
 }
 
 /* 🧠 INIT */
+/* 🧠 INIT */
 document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("stopSoundBtn").addEventListener("click", stopSound);
     document.getElementById("refreshBtn").addEventListener("click", () => fetchStockData(false, true));
@@ -351,4 +352,16 @@ document.addEventListener("DOMContentLoaded", () => {
     updateDateTime();
     fetchStockData();
     startTimer();
+
+    // 🔔 Listen for background PLAY_ALARM message from Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener("message", (event) => {
+            if (event.data && event.data.type === "PLAY_ALARM") {
+                const audio = new Audio(event.data.sound);
+                audio.loop = true;
+                audio.play().catch(err => console.warn("Audio play blocked:", err));
+            }
+        });
+    }
 });
+
