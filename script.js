@@ -148,8 +148,8 @@ async function fetchStockData(isRetry = false, isManual = false) {
 
         const timestamp = Date.now();
         const [seedsRes, gearRes] = await Promise.all([
-            fetch(`https://pvbstockbackend-1.onrender.com/seed_proxy.php?t=${timestamp}`),
-            fetch(`https://pvbstockbackend-1.onrender.com/gear_proxy.php?t=${timestamp}`)
+            fetch(`https://pvbstockbackendnew.onrender.com/seed_proxy.php?t=${timestamp}`),
+            fetch(`https://pvbstockbackendnew.onrender.com/gear_proxy.php?t=${timestamp}`)
         ]);
         const [seeds, gear] = await Promise.all([seedsRes.json(), gearRes.json()]);
 
