@@ -12,7 +12,7 @@ let audioCtx;
 const isMedian = typeof window.Median !== "undefined";
 
 const ALL_SEEDS = ["Cactus", "Strawberry", "Pumpkin", "Sunflower", "Dragon Fruit", "Eggplant",
-    "Watermelon", "Grape Seed", "Cocotank", "Carnivorous Plant", "Mr Carrot", "Tomatrio",
+    "Watermelon", "Grape", "Cocotank", "Carnivorous Plant", "Mr Carrot", "Tomatrio",
     "Shroombino", "Mango", "King Limone"];
 const ALL_GEARS = ["Water Bucket", "Frost Grenade", "Banana Gun", "Frost Blower", "Carrot Launcher"];
 
