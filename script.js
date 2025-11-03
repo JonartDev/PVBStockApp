@@ -55,22 +55,26 @@ let audioCtx;
 // 🌐 Detect if running inside Median APK
 const isMedian = typeof window.Median !== "undefined";
 
-const ALL_SEEDS = ["Cactus", "Strawberry", "Pumpkin", "Sunflower", "Dragon Fruit", "Eggplant",
+const ALL_SEEDS = [
+    "Cactus", "Strawberry", "Pumpkin", "Sunflower", "Dragon Fruit", "Eggplant",
     "Watermelon", "Grape", "Cocotank", "Carnivorous Plant", "Mr Carrot", "Tomatrio",
-    "Shroombino", "Mango", "King Limone"];
+    "Shroombino", "Mango", "King Limone", "Starfruit",
+];
+
 const ALL_GEARS = ["Water Bucket", "Frost Grenade", "Banana Gun", "Frost Blower", "Carrot Launcher"];
 
 let selectedSeeds = JSON.parse(localStorage.getItem("selectedSeeds")) || ALL_SEEDS;
 let selectedGears = JSON.parse(localStorage.getItem("selectedGears")) || ALL_GEARS;
 
 const ICONS = {
-    "Cactus": "🌵", "Strawberry": "🍓", "Pumpkin": "🎃", "Sunflower": "🌻",
-    "Dragon Fruit": "🐉", "Eggplant": "🍆", "Watermelon": "🍉", "Grape": "🍇",
-    "Cocotank": "🥥", "Carnivorous Plant": "🪴", "Mr Carrot": "🥕", "Tomatrio": "🍅",
-    "Shroombino": "🍄", "Mango": "🥭", "King Limone": "🍋",
-    "Water Bucket": "🪣", "Frost Grenade": "🧊", "Banana Gun": "🍌🔫",
-    "Frost Blower": "❄️", "Carrot Launcher": "🥕🚀"
+    Cactus: "🌵", Strawberry: "🍓", Pumpkin: "🎃", Sunflower: "🌻", "Dragon Fruit": "🐉",
+    Eggplant: "🍆", Watermelon: "🍉", Grape: "🍇", Cocotank: "🥥", "Carnivorous Plant": "🪴",
+    "Mr Carrot": "🥕", Tomatrio: "🍅", Shroombino: "🍄", Mango: "🥭", "King Limone": "🍋",
+    Starfruit: "⭐",
+    "Water Bucket": "🪣", "Frost Grenade": "🧊", "Banana Gun": "🍌🔫", "Frost Blower": "❄️",
+    "Carrot Launcher": "🥕🚀",
 };
+
 
 const alarmSound = new Audio("https://actions.google.com/sounds/v1/alarms/spaceship_alarm.ogg");
 alarmSound.loop = true;

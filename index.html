@@ -13,19 +13,37 @@
 
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.14.0/firebase-messaging-compat.js"></script>
+
     <script>
-        // Initialize Firebase Messaging
+        // ✅ Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyBCHgS3WNcSslllZP3tNhTVnn5zNCrvsEQ",
+            authDomain: "pvb-stock-alert.firebaseapp.com",
+            projectId: "pvb-stock-alert",
+            storageBucket: "pvb-stock-alert.firebasestorage.app",
+            messagingSenderId: "175426651869",
+            appId: "1:175426651869:web:5293d6a67b206bd2dafd34",
+            measurementId: "G-SPM843E395"
+        };
+
+        // ✅ Initialize Firebase FIRST
+        firebase.initializeApp(firebaseConfig);
+
+        // ✅ Then get Messaging instance
         const messaging = firebase.messaging();
 
         async function requestNotificationPermission() {
             const permission = await Notification.requestPermission();
             if (permission === "granted") {
-                const token = await messaging.getToken({
-                    vapidKey: "BM3B9iuetdwzEHYFJyG6pIgo2TaIWUXhn4RZPhIDcKM31GQUMoaPRhf4_dHkqF8sgZFxOFjwTVh4WDUQm4dvTP4"
-                });
-                console.log("✅ FCM Token:", token);
-                alert("Your FCM token:\n" + token);
-                // (Optional) Save to your backend or localStorage
+                try {
+                    const token = await messaging.getToken({
+                        vapidKey: "BM3B9iuetdwzEHYFJyG6pIgo2TaIWUXhn4RZPhIDcKM31GQUMoaPRhf4_dHkqF8sgZFxOFjwTVh4WDUQm4dvTP4"
+                    });
+                    console.log("✅ FCM Token:", token);
+                    alert("Your FCM token:\n" + token);
+                } catch (err) {
+                    console.error("❌ Error getting token:", err);
+                }
             } else {
                 console.warn("🚫 Notification permission denied.");
             }
@@ -33,13 +51,14 @@
 
         requestNotificationPermission();
 
-        // Foreground message handler
+        // ✅ Foreground message handler
         messaging.onMessage((payload) => {
             console.log("📩 Message received: ", payload);
             const { title, body } = payload.notification;
             new Notification(title, { body });
         });
     </script>
+
     <script>
         /* 🧩 PWA Setup */
         if ("serviceWorker" in navigator) {
